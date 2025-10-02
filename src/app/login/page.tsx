@@ -61,7 +61,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-sm text-charcoal/60">
-            Admin access required for dashboard
+            Welcome back to Lumidumi
           </p>
         </div>
 
