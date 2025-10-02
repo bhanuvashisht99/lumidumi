@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { Bars3Icon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/outline'
 import Logo from './Logo'
 import { useAuth } from '@/contexts/AuthContext'
+import { useCart } from '@/contexts/CartContext'
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { isAdmin, user, signOut } = useAuth()
+  const { getTotalItems } = useCart()
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -59,7 +61,7 @@ export default function Navbar() {
           >
             <ShoppingCartIcon className="h-6 w-6" />
             <span className="absolute -top-1 -right-1 bg-cream-300 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              0
+              {getTotalItems()}
             </span>
           </a>
 

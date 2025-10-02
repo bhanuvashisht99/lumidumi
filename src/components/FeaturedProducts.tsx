@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { getProducts, Product } from '@/lib/database'
+import { useCart } from '@/contexts/CartContext'
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
   useEffect(() => {
     async function loadProducts() {
@@ -138,10 +140,16 @@ export default function FeaturedProducts() {
                       ₹{product.price}
                     </span>
                     <button
+                      onClick={() => addToCart(product)}
                       className="text-sm bg-cream-100 hover:bg-cream-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       disabled={product.stock_quantity === 0}
                     >
-                      {product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                      {product.stock_quantity === 0
+                        ? 'Out of Stock'
+                        : isInCart(product.id)
+                        ? `In Cart (${getCartItemQuantity(product.id)})`
+                        : 'Add to Cart'
+                      }
                     </button>
                   </div>
                   {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
