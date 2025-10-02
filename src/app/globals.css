@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-cream-300 text-white px-6 py-3 rounded-lg font-medium hover:bg-cream-300/90 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-cream-100 text-charcoal px-6 py-3 rounded-lg font-medium hover:bg-cream-200 transition-colors;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-cream-100 p-6;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 focus:border-transparent;
+  }
+}
