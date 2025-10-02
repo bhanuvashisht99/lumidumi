@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Logo from './Logo'
 
 export default function Hero() {
   return (
@@ -10,6 +11,9 @@ export default function Hero() {
           {/* Content */}
           <div className="space-y-8">
             <div className="space-y-4">
+              <div className="flex items-center space-x-4 mb-4">
+                <Logo width={80} height={80} className="text-charcoal" />
+              </div>
               <h1 className="text-5xl lg:text-6xl font-bold text-charcoal leading-tight">
                 Lumidumi
               </h1>
