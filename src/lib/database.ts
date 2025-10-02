@@ -87,6 +87,11 @@ export interface Profile {
 
 // Products
 export async function getProducts(featured?: boolean) {
+  // Check if we have valid Supabase configuration
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+    throw new Error('Supabase not configured')
+  }
+
   let query = supabase
     .from('products')
     .select(`

@@ -10,8 +10,13 @@ export default function FeaturedProducts() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const featuredProducts = await getProducts(true) // Get only featured products
-        setProducts(featuredProducts)
+        // Check if we're in a browser environment with valid Supabase config
+        if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+          const featuredProducts = await getProducts(true) // Get only featured products
+          setProducts(featuredProducts)
+        } else {
+          throw new Error('Supabase not configured or running on server')
+        }
       } catch (error) {
         console.error('Error loading products:', error)
         // Fallback to hardcoded products if database fails
