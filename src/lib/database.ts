@@ -87,32 +87,41 @@ export interface Profile {
 
 // Products
 export async function getProducts(featured?: boolean) {
-  // Check if we have valid Supabase configuration
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
-    throw new Error('Supabase not configured')
+  try {
+    // Check if we have valid Supabase configuration
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://placeholder.supabase.co') {
+      throw new Error('Supabase not configured')
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client not initialized')
+    }
+
+    let query = supabase
+      .from('products')
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+
+    if (featured) {
+      query = query.eq('featured', true)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching products:', error)
+      throw error
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error in getProducts:', error)
+    throw error
   }
-
-  let query = supabase
-    .from('products')
-    .select(`
-      *,
-      category:categories(*)
-    `)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-
-  if (featured) {
-    query = query.eq('featured', true)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching products:', error)
-    return []
-  }
-
-  return data || []
 }
 
 export async function getProduct(id: string) {

@@ -1,9 +1,48 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
+  const { isAdmin, loading, user } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin)) {
+      router.push('/login')
+    }
+  }, [loading, user, isAdmin, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
+          <p className="mt-4 text-charcoal">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-charcoal mb-4">Access Denied</h1>
+          <p className="text-charcoal/60 mb-6">You need admin privileges to access this page.</p>
+          <a
+            href="/login"
+            className="btn-primary"
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   const stats = [
     { name: 'Total Products', value: '24', change: '+2 this week' },
@@ -17,6 +56,7 @@ export default function AdminDashboard() {
     { id: 'orders', name: 'Orders', icon: '📋' },
     { id: 'customers', name: 'Customers', icon: '👥' },
     { id: 'custom', name: 'Custom Orders', icon: '🎨' },
+    { id: 'content', name: 'Content', icon: '📝' },
   ]
 
   return (
@@ -69,6 +109,7 @@ export default function AdminDashboard() {
           {activeTab === 'orders' && <OrdersTab />}
           {activeTab === 'customers' && <CustomersTab />}
           {activeTab === 'custom' && <CustomOrdersTab />}
+          {activeTab === 'content' && <ContentTab />}
         </div>
       </div>
     </div>
@@ -201,6 +242,271 @@ function CustomOrdersTab() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ContentTab() {
+  const [selectedSection, setSelectedSection] = useState('hero')
+  const [heroContent, setHeroContent] = useState({
+    title: 'Lumidumi',
+    subtitle: 'Handcrafted candles that illuminate your space with warmth and elegance.',
+    description: 'Each candle is lovingly made with premium wax and carefully selected fragrances.',
+    imageUrl: '',
+    stats: [
+      { value: '100%', label: 'Natural Wax' },
+      { value: '50+', label: 'Unique Scents' },
+      { value: '24h', label: 'Burn Time' }
+    ]
+  })
+
+  const [aboutContent, setAboutContent] = useState({
+    title: 'Crafted with Love',
+    subtitle: 'At Lumidumi, every candle tells a story.',
+    description: 'We believe in the power of handcrafted beauty and the warmth that comes from creating something special with your own hands.',
+    imageUrl: '',
+    features: [
+      { icon: '🌿', title: 'Natural Ingredients', description: 'We use only premium natural wax and carefully sourced fragrances' },
+      { icon: '👐', title: 'Handmade Process', description: 'Each candle is individually crafted with attention to every detail' },
+      { icon: '🎨', title: 'Custom Designs', description: 'Personalized candles for your special moments and occasions' }
+    ]
+  })
+
+  const handleSave = async (section: string) => {
+    // TODO: Implement save functionality with Supabase
+    console.log(`Saving ${section} content...`)
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-charcoal">Content Management</h2>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setSelectedSection('hero')}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${
+              selectedSection === 'hero'
+                ? 'bg-cream-300 text-white'
+                : 'bg-cream-100 text-charcoal hover:bg-cream-200'
+            }`}
+          >
+            Hero Section
+          </button>
+          <button
+            onClick={() => setSelectedSection('about')}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${
+              selectedSection === 'about'
+                ? 'bg-cream-300 text-white'
+                : 'bg-cream-100 text-charcoal hover:bg-cream-200'
+            }`}
+          >
+            About Section
+          </button>
+        </div>
+      </div>
+
+      {selectedSection === 'hero' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={heroContent.title}
+                onChange={(e) => setHeroContent({ ...heroContent, title: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Image URL
+              </label>
+              <input
+                type="url"
+                value={heroContent.imageUrl}
+                onChange={(e) => setHeroContent({ ...heroContent, imageUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Subtitle
+            </label>
+            <textarea
+              value={heroContent.subtitle}
+              onChange={(e) => setHeroContent({ ...heroContent, subtitle: e.target.value })}
+              rows={2}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Description
+            </label>
+            <textarea
+              value={heroContent.description}
+              onChange={(e) => setHeroContent({ ...heroContent, description: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-4">
+              Statistics
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {heroContent.stats.map((stat, index) => (
+                <div key={index} className="space-y-2">
+                  <input
+                    type="text"
+                    value={stat.value}
+                    onChange={(e) => {
+                      const newStats = [...heroContent.stats]
+                      newStats[index].value = e.target.value
+                      setHeroContent({ ...heroContent, stats: newStats })
+                    }}
+                    className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="100%"
+                  />
+                  <input
+                    type="text"
+                    value={stat.label}
+                    onChange={(e) => {
+                      const newStats = [...heroContent.stats]
+                      newStats[index].label = e.target.value
+                      setHeroContent({ ...heroContent, stats: newStats })
+                    }}
+                    className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="Natural Wax"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => handleSave('hero')}
+            className="btn-primary"
+          >
+            Save Hero Content
+          </button>
+        </div>
+      )}
+
+      {selectedSection === 'about' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={aboutContent.title}
+                onChange={(e) => setAboutContent({ ...aboutContent, title: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Image URL
+              </label>
+              <input
+                type="url"
+                value={aboutContent.imageUrl}
+                onChange={(e) => setAboutContent({ ...aboutContent, imageUrl: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Subtitle
+            </label>
+            <textarea
+              value={aboutContent.subtitle}
+              onChange={(e) => setAboutContent({ ...aboutContent, subtitle: e.target.value })}
+              rows={2}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Description
+            </label>
+            <textarea
+              value={aboutContent.description}
+              onChange={(e) => setAboutContent({ ...aboutContent, description: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-4">
+              Features
+            </label>
+            <div className="space-y-4">
+              {aboutContent.features.map((feature, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-cream-50 rounded-lg">
+                  <input
+                    type="text"
+                    value={feature.icon}
+                    onChange={(e) => {
+                      const newFeatures = [...aboutContent.features]
+                      newFeatures[index].icon = e.target.value
+                      setAboutContent({ ...aboutContent, features: newFeatures })
+                    }}
+                    className="px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="🌿"
+                  />
+                  <input
+                    type="text"
+                    value={feature.title}
+                    onChange={(e) => {
+                      const newFeatures = [...aboutContent.features]
+                      newFeatures[index].title = e.target.value
+                      setAboutContent({ ...aboutContent, features: newFeatures })
+                    }}
+                    className="px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="Feature Title"
+                  />
+                  <div className="md:col-span-2">
+                    <input
+                      type="text"
+                      value={feature.description}
+                      onChange={(e) => {
+                        const newFeatures = [...aboutContent.features]
+                        newFeatures[index].description = e.target.value
+                        setAboutContent({ ...aboutContent, features: newFeatures })
+                      }}
+                      className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                      placeholder="Feature description"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => handleSave('about')}
+            className="btn-primary"
+          >
+            Save About Content
+          </button>
+        </div>
+      )}
     </div>
   )
 }

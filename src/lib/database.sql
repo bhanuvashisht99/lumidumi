@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     phone VARCHAR(20),
+    role VARCHAR(20) DEFAULT 'customer', -- customer, admin
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -105,6 +106,21 @@ CREATE TABLE IF NOT EXISTS comments (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Content management table for hero and about sections
+CREATE TABLE IF NOT EXISTS site_content (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    section VARCHAR(50) NOT NULL UNIQUE, -- 'hero' or 'about'
+    title VARCHAR(200),
+    subtitle TEXT,
+    description TEXT,
+    image_url TEXT,
+    button_text VARCHAR(100),
+    button_url VARCHAR(200),
+    additional_data JSONB, -- For storing extra content like stats, features, etc.
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Insert sample categories
 INSERT INTO categories (name, description, slug) VALUES
     ('Scented Candles', 'Premium scented candles with natural fragrances', 'scented-candles'),
@@ -140,6 +156,9 @@ CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXE
 CREATE TRIGGER update_custom_orders_updated_at BEFORE UPDATE ON custom_orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Add updated_at triggers
+CREATE TRIGGER update_site_content_updated_at BEFORE UPDATE ON site_content FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
@@ -148,6 +167,7 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE site_content ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for public access to products and categories
 CREATE POLICY "Anyone can view categories" ON categories FOR SELECT USING (true);
@@ -170,3 +190,12 @@ CREATE POLICY "Users can create custom orders" ON custom_orders FOR INSERT WITH 
 
 CREATE POLICY "Users can view approved comments" ON comments FOR SELECT USING (is_approved = true);
 CREATE POLICY "Users can create comments" ON comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Site content policies
+CREATE POLICY "Anyone can view site content" ON site_content FOR SELECT USING (true);
+
+-- Insert default content for hero and about sections
+INSERT INTO site_content (section, title, subtitle, description, additional_data) VALUES
+    ('hero', 'Lumidumi', 'Handcrafted candles that illuminate your space with warmth and elegance.', 'Each candle is lovingly made with premium wax and carefully selected fragrances.', '{"stats": [{"value": "100%", "label": "Natural Wax"}, {"value": "50+", "label": "Unique Scents"}, {"value": "24h", "label": "Burn Time"}]}'),
+    ('about', 'Crafted with Love', 'At Lumidumi, every candle tells a story.', 'We believe in the power of handcrafted beauty and the warmth that comes from creating something special with your own hands.', '{"features": [{"icon": "🌿", "title": "Natural Ingredients", "description": "We use only premium natural wax and carefully sourced fragrances"}, {"icon": "👐", "title": "Handmade Process", "description": "Each candle is individually crafted with attention to every detail"}, {"icon": "🎨", "title": "Custom Designs", "description": "Personalized candles for your special moments and occasions"}]}')
+ON CONFLICT (section) DO NOTHING;

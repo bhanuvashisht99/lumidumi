@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { Bars3Icon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/outline'
 import Logo from './Logo'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { isAdmin, user, signOut } = useAuth()
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -60,12 +62,33 @@ export default function Navbar() {
               0
             </span>
           </a>
-          <a
-            href="/admin"
-            className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
-          >
-            Admin
-          </a>
+
+          {/* Show admin link only for admin users */}
+          {isAdmin && (
+            <a
+              href="/admin"
+              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+            >
+              Admin
+            </a>
+          )}
+
+          {/* User authentication */}
+          {user ? (
+            <button
+              onClick={() => signOut()}
+              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <a
+              href="/login"
+              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+            >
+              Sign In
+            </a>
+          )}
         </div>
       </nav>
 
@@ -106,12 +129,33 @@ export default function Navbar() {
                   >
                     Cart
                   </a>
-                  <a
-                    href="/admin"
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
-                  >
-                    Admin
-                  </a>
+
+                  {/* Show admin link only for admin users */}
+                  {isAdmin && (
+                    <a
+                      href="/admin"
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                    >
+                      Admin
+                    </a>
+                  )}
+
+                  {/* User authentication */}
+                  {user ? (
+                    <button
+                      onClick={() => signOut()}
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 w-full text-left"
+                    >
+                      Sign Out
+                    </button>
+                  ) : (
+                    <a
+                      href="/login"
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                    >
+                      Sign In
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
