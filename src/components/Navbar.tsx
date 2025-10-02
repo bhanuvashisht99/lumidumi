@@ -20,8 +20,8 @@ export default function Navbar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8">
         {/* Logo */}
         <div className="flex lg:flex-1">
-          <a href="/" className="-m-1.5 p-1.5">
-            <Logo width={32} height={32} />
+          <a href="/" className="-m-1.5 p-1.5 flex items-center">
+            <Logo width={40} height={40} showText={false} />
           </a>
         </div>
 
@@ -75,8 +75,8 @@ export default function Navbar() {
           <div className="fixed inset-0 z-50" />
           <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
             <div className="flex items-center justify-between">
-              <a href="/" className="-m-1.5 p-1.5">
-                <Logo width={32} height={32} />
+              <a href="/" className="-m-1.5 p-1.5 flex items-center">
+                <Logo width={40} height={40} showText={false} />
               </a>
               <button
                 type="button"
