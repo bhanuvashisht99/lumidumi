@@ -1,14 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Razorpay from 'razorpay'
 
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
+function getRazorpayInstance() {
+  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+  const keySecret = process.env.RAZORPAY_KEY_SECRET
+
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials not configured')
+  }
+
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  })
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { amount, currency = 'INR', receipt } = await request.json()
+
+    // Check if Razorpay is configured
+    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return NextResponse.json(
+        { error: 'Payment gateway not configured' },
+        { status: 503 }
+      )
+    }
 
     // Validate amount
     if (!amount || amount < 1) {
@@ -19,6 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Razorpay order
+    const razorpay = getRazorpayInstance()
     const order = await razorpay.orders.create({
       amount: amount * 100, // Razorpay expects amount in paise
       currency,
