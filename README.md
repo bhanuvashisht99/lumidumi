@@ -279,4 +279,4 @@ This project is proprietary software for Lumidumi candle business.
 
 ## Support
 
-For support and questions, contact: hello@lumidumi.com
+For support and questions, contact: hello@lumidumi.com# Trigger deployment with updated environment variables
