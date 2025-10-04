@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const { signUp, user } = useAuth()
   const router = useRouter()
@@ -27,6 +28,7 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
@@ -46,8 +48,13 @@ export default function RegisterPage() {
       if (error) {
         setError(error.message || 'Failed to create account')
       } else {
-        // Show success message or redirect
-        router.push('/login?message=Please check your email to verify your account')
+        // Show success message
+        setSuccess('Account created successfully! Please check your email for a verification link before signing in.')
+        // Clear form
+        setEmail('')
+        setPassword('')
+        setConfirmPassword('')
+        setFullName('')
       }
     } catch (err) {
       setError('An unexpected error occurred')
@@ -84,6 +91,15 @@ export default function RegisterPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4">
               <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <p className="text-green-800 text-sm">{success}</p>
+              <p className="text-green-700 text-xs mt-2">
+                After verifying your email, you can <a href="/login" className="underline font-medium">sign in here</a>.
+              </p>
             </div>
           )}
 

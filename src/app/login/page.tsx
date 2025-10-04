@@ -30,7 +30,14 @@ export default function LoginPage() {
       const { error } = await signIn(email, password)
 
       if (error) {
-        setError(error.message || 'Failed to sign in')
+        // Provide better error messages for common issues
+        if (error.message?.includes('Email not confirmed')) {
+          setError('Please check your email and click the verification link before signing in.')
+        } else if (error.message?.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please check your credentials and try again.')
+        } else {
+          setError(error.message || 'Failed to sign in')
+        }
       } else {
         // Redirect will happen via useEffect
       }

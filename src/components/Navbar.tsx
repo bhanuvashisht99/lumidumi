@@ -77,12 +77,20 @@ export default function Navbar() {
 
           {/* User authentication */}
           {user ? (
-            <button
-              onClick={() => signOut()}
-              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-x-4">
+              <a
+                href="/profile"
+                className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+              >
+                My Account
+              </a>
+              <button
+                onClick={() => signOut()}
+                className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           ) : (
             <a
               href="/login"
@@ -144,12 +152,20 @@ export default function Navbar() {
 
                   {/* User authentication */}
                   {user ? (
-                    <button
-                      onClick={() => signOut()}
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 w-full text-left"
-                    >
-                      Sign Out
-                    </button>
+                    <>
+                      <a
+                        href="/profile"
+                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                      >
+                        My Account
+                      </a>
+                      <button
+                        onClick={() => signOut()}
+                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 w-full text-left"
+                      >
+                        Sign Out
+                      </button>
+                    </>
                   ) : (
                     <a
                       href="/login"
