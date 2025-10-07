@@ -36,6 +36,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error loading cart from localStorage:', error)
       }
+    } else {
+      // Add test product for payment testing
+      const testProduct: Product = {
+        id: 'test-1',
+        name: 'Vanilla Dreams',
+        description: 'A warm vanilla scented candle perfect for relaxation',
+        price: 899,
+        category: 'Scented',
+        scent_description: 'Warm vanilla with hints of caramel',
+        burn_time: '24 hours',
+        stock_quantity: 12,
+        image_url: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      const testCartItem: CartItem = {
+        id: 'test-1',
+        product: testProduct,
+        quantity: 1
+      }
+      setItems([testCartItem])
     }
   }, [])
 
