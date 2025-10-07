@@ -91,8 +91,8 @@ export default function CheckoutPage() {
   }
 
   const subtotal = getTotalPrice()
-  const gst = Math.round(subtotal * 0.18)
-  const total = subtotal + gst
+  const deliveryCharges = subtotal >= 999 ? 0 : 50
+  const total = subtotal + deliveryCharges
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -172,8 +172,8 @@ export default function CheckoutPage() {
     try {
       const orderData = await createRazorpayOrder()
 
-      // Check if Razorpay key is available - get from environment at build time
-      const razorpayKey = 'rzp_test_RQcQeEz3nDpkKm' // Your test key
+      // Check if Razorpay key is available
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
       if (!razorpayKey) {
         alert('Payment gateway not configured. Please contact support.')
         setLoading(false)
@@ -485,12 +485,10 @@ export default function CheckoutPage() {
                 <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span className="text-green-600">Free</span>
-              </div>
-              <div className="flex justify-between">
-                <span>GST (18%)</span>
-                <span>{formatPrice(gst)}</span>
+                <span>Delivery Charges</span>
+                <span className={deliveryCharges === 0 ? "text-green-600" : ""}>
+                  {deliveryCharges === 0 ? 'Free' : formatPrice(deliveryCharges)}
+                </span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t border-cream-200 pt-3">
                 <span>Total</span>

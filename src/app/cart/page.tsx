@@ -207,13 +207,8 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-charcoal/70">Shipping</span>
-                  <span className="font-medium">Free</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-charcoal/70">Tax (GST 18%)</span>
-                  <span className="font-medium">{formatPrice(Math.round(getTotalPrice() * 0.18))}</span>
+                  <span className="text-charcoal/70">Delivery Charges</span>
+                  <span className="font-medium">{getTotalPrice() >= 999 ? 'Free' : formatPrice(50)}</span>
                 </div>
 
                 <hr className="border-cream-200" />
@@ -221,7 +216,7 @@ export default function CartPage() {
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-cream-300">
-                    {formatPrice(Math.round(getTotalPrice() * 1.18))}
+                    {formatPrice(getTotalPrice() + (getTotalPrice() >= 999 ? 0 : 50))}
                   </span>
                 </div>
               </div>
