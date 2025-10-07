@@ -195,6 +195,12 @@ export default function CheckoutPage() {
         theme: {
           color: '#D4A574' // cream-300 color
         },
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true
+        },
         handler: async function (response: any) {
           // Payment successful
           try {
