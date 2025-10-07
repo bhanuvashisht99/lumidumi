@@ -133,14 +133,16 @@ export default function CheckoutPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: total * 100, // Razorpay expects amount in paise
+          amount: total,
           currency: 'INR',
           receipt: `order_${Date.now()}`,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create order')
+        const errorData = await response.text()
+        console.error('API Error:', errorData)
+        throw new Error(`Failed to create order: ${response.status}`)
       }
 
       return await response.json()
@@ -160,8 +162,16 @@ export default function CheckoutPage() {
     try {
       const orderData = await createRazorpayOrder()
 
+      // Check if Razorpay key is available
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      if (!razorpayKey) {
+        alert('Payment gateway not configured. Please contact support.')
+        setLoading(false)
+        return
+      }
+
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Lumidumi',

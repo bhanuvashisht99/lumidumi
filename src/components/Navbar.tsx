@@ -105,8 +105,11 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden">
-          <div className="fixed inset-0 z-50" />
-          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
+          <div
+            className="fixed inset-0 z-40 bg-black/20"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 shadow-lg">
             <div className="flex items-center justify-between">
               <a href="/" className="-m-1.5 p-1.5 flex items-center">
                 <Logo width={40} height={40} showText={false} />
@@ -126,6 +129,7 @@ export default function Navbar() {
                     <a
                       key={item.name}
                       href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
                       className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
                     >
                       {item.name}
@@ -135,6 +139,7 @@ export default function Navbar() {
                 <div className="py-6">
                   <a
                     href="/cart"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
                   >
                     Cart
@@ -144,6 +149,7 @@ export default function Navbar() {
                   {isAdmin && (
                     <a
                       href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
                       className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
                     >
                       Admin
@@ -155,12 +161,16 @@ export default function Navbar() {
                     <>
                       <a
                         href="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
                         className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
                       >
                         My Account
                       </a>
                       <button
-                        onClick={() => signOut()}
+                        onClick={() => {
+                          signOut()
+                          setMobileMenuOpen(false)
+                        }}
                         className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 w-full text-left"
                       >
                         Sign Out
@@ -169,6 +179,7 @@ export default function Navbar() {
                   ) : (
                     <a
                       href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
                       className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
                     >
                       Sign In
