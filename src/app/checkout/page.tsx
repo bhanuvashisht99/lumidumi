@@ -162,8 +162,8 @@ export default function CheckoutPage() {
     try {
       const orderData = await createRazorpayOrder()
 
-      // Check if Razorpay key is available
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      // Check if Razorpay key is available - get from environment at build time
+      const razorpayKey = 'rzp_test_RQcQeEz3nDpkKm' // Your test key
       if (!razorpayKey) {
         alert('Payment gateway not configured. Please contact support.')
         setLoading(false)
