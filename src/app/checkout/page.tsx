@@ -57,12 +57,22 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [cartLoaded, setCartLoaded] = useState(false)
+
+  // Wait for cart to load from localStorage before checking if empty
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCartLoaded(true)
+    }, 100) // Small delay to allow cart context to load from localStorage
+
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (cartLoaded && items.length === 0) {
       router.push('/cart')
     }
-  }, [items, router])
+  }, [items, router, cartLoaded])
 
   useEffect(() => {
     // Load Razorpay script
@@ -233,8 +243,15 @@ export default function CheckoutPage() {
     }
   }
 
-  if (items.length === 0) {
-    return null // Will redirect to cart
+  if (!cartLoaded || items.length === 0) {
+    return (
+      <div className="min-h-screen bg-cream-50 pt-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cream-300 mx-auto"></div>
+          <p className="mt-4 text-charcoal">Loading checkout...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
