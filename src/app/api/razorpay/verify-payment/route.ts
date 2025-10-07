@@ -17,8 +17,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if Razorpay is configured
-    if (!process.env.RAZORPAY_KEY_SECRET) {
+    // Use hardcoded key secret for testing
+    const keySecret = '0dQ7HeIUuWu0T8F5KH9NRhz6'
+
+    if (!keySecret) {
       return NextResponse.json(
         { error: 'Payment gateway not configured' },
         { status: 503 }
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Create signature for verification
     const body = razorpay_order_id + '|' + razorpay_payment_id
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', keySecret)
       .update(body.toString())
       .digest('hex')
 
