@@ -8,7 +8,12 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Lumidumi - Handmade Candles',
   description: 'Beautiful handmade candles crafted with love. Discover our premium collection of scented and decorative candles.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
+
+export const viewport = 'width=device-width, initial-scale=1'
 
 export default function RootLayout({
   children,

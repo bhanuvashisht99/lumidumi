@@ -20,8 +20,8 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="fixed w-full top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-cream-100">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8">
+    <header className="fixed w-full top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-cream-100 shadow-sm">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <div className="flex lg:flex-1">
           <a href="/" className="-m-1.5 p-1.5 flex items-center">
@@ -29,11 +29,25 @@ export default function Navbar() {
           </a>
         </div>
 
-        {/* Mobile menu button */}
-        <div className="flex lg:hidden">
+        {/* Mobile cart and menu */}
+        <div className="flex lg:hidden items-center gap-x-2">
+          {/* Mobile cart icon */}
+          <a
+            href="/cart"
+            className="relative p-2 text-charcoal hover:text-cream-300 transition-colors"
+          >
+            <ShoppingCartIcon className="h-6 w-6" />
+            {getTotalItems() > 0 && (
+              <span className="absolute -top-1 -right-1 bg-cream-300 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {getTotalItems()}
+              </span>
+            )}
+          </a>
+
+          {/* Mobile menu button */}
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-charcoal"
+            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-charcoal hover:bg-cream-50"
             onClick={() => setMobileMenuOpen(true)}
           >
             <Bars3Icon className="h-6 w-6" />
@@ -60,9 +74,11 @@ export default function Navbar() {
             className="relative p-2 text-charcoal hover:text-cream-300 transition-colors"
           >
             <ShoppingCartIcon className="h-6 w-6" />
-            <span className="absolute -top-1 -right-1 bg-cream-300 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {getTotalItems()}
-            </span>
+            {getTotalItems() > 0 && (
+              <span className="absolute -top-1 -right-1 bg-cream-300 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {getTotalItems()}
+              </span>
+            )}
           </a>
 
           {/* Show admin link only for admin users */}
@@ -109,7 +125,7 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-black/20"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 shadow-lg">
+          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-4 py-4 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 shadow-lg">
             <div className="flex items-center justify-between">
               <a href="/" className="-m-1.5 p-1.5 flex items-center">
                 <Logo width={40} height={40} showText={false} />

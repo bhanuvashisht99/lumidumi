@@ -12,12 +12,12 @@ export default function Hero() {
           <div className="space-y-8">
             <div className="space-y-6">
               <div className="flex items-center justify-start mb-4">
-                <Logo width={120} height={120} showText={false} className="text-charcoal" />
+                <Logo width={80} height={80} showText={false} className="text-charcoal sm:w-24 sm:h-24 lg:w-32 lg:h-32" />
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-charcoal leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-charcoal leading-tight">
                 Lumidumi
               </h1>
-              <p className="text-xl text-charcoal/80 leading-relaxed">
+              <p className="text-lg sm:text-xl text-charcoal/80 leading-relaxed">
                 Handcrafted candles that illuminate your space with warmth and elegance.
                 Each candle is lovingly made with premium wax and carefully selected fragrances.
               </p>
