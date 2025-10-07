@@ -45,70 +45,149 @@ export default function CartPage() {
 
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-4 p-4 border border-cream-200 rounded-lg">
-                      {/* Product Image */}
-                      <div className="w-20 h-20 bg-cream-100 rounded-lg flex items-center justify-center text-3xl">
-                        {item.product.image_url ? (
-                          <img
-                            src={item.product.image_url}
-                            alt={item.product.name}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          '🕯️'
-                        )}
+                    <div key={item.id} className="border border-cream-200 rounded-lg p-4">
+                      {/* Mobile Layout */}
+                      <div className="block sm:hidden">
+                        <div className="flex items-start space-x-3">
+                          {/* Product Image */}
+                          <div className="w-16 h-16 bg-cream-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                            {item.product.image_url ? (
+                              <img
+                                src={item.product.image_url}
+                                alt={item.product.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              '🕯️'
+                            )}
+                          </div>
+
+                          {/* Product Details */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-charcoal truncate">{item.product.name}</h3>
+                                <p className="text-sm text-charcoal/60 mt-1 line-clamp-2">
+                                  {item.product.scent_description}
+                                </p>
+                                <p className="text-lg font-bold text-cream-300 mt-2">
+                                  {formatPrice(item.product.price)}
+                                </p>
+                              </div>
+
+                              {/* Remove Button */}
+                              <button
+                                onClick={() => removeFromCart(item.id)}
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-2"
+                                title="Remove from cart"
+                              >
+                                <TrashIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+
+                            {/* Quantity and Subtotal Row */}
+                            <div className="flex justify-between items-center mt-3">
+                              {/* Quantity Controls */}
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  className="w-8 h-8 rounded-full border border-cream-200 flex items-center justify-center hover:bg-cream-50 transition-colors"
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <MinusIcon className="w-4 h-4" />
+                                </button>
+
+                                <span className="w-8 text-center font-medium">{item.quantity}</span>
+
+                                <button
+                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  className="w-8 h-8 rounded-full border border-cream-200 flex items-center justify-center hover:bg-cream-50 transition-colors"
+                                  disabled={item.quantity >= item.product.stock_quantity}
+                                >
+                                  <PlusIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Subtotal */}
+                              <div className="text-right">
+                                <p className="font-semibold text-charcoal">
+                                  {formatPrice(item.product.price * item.quantity)}
+                                </p>
+                                <p className="text-xs text-charcoal/60">
+                                  {item.product.stock_quantity - item.quantity} left
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Product Details */}
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-charcoal">{item.product.name}</h3>
-                        <p className="text-sm text-charcoal/60 mt-1">
-                          {item.product.scent_description}
-                        </p>
-                        <p className="text-lg font-bold text-cream-300 mt-2">
-                          {formatPrice(item.product.price)}
-                        </p>
-                      </div>
+                      {/* Desktop Layout */}
+                      <div className="hidden sm:flex items-center space-x-4">
+                        {/* Product Image */}
+                        <div className="w-20 h-20 bg-cream-100 rounded-lg flex items-center justify-center text-3xl">
+                          {item.product.image_url ? (
+                            <img
+                              src={item.product.image_url}
+                              alt={item.product.name}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            '🕯️'
+                          )}
+                        </div>
 
-                      {/* Quantity Controls */}
-                      <div className="flex items-center space-x-2">
+                        {/* Product Details */}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-charcoal">{item.product.name}</h3>
+                          <p className="text-sm text-charcoal/60 mt-1">
+                            {item.product.scent_description}
+                          </p>
+                          <p className="text-lg font-bold text-cream-300 mt-2">
+                            {formatPrice(item.product.price)}
+                          </p>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="w-8 h-8 rounded-full border border-cream-200 flex items-center justify-center hover:bg-cream-50 transition-colors"
+                            disabled={item.quantity <= 1}
+                          >
+                            <MinusIcon className="w-4 h-4" />
+                          </button>
+
+                          <span className="w-12 text-center font-medium">{item.quantity}</span>
+
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-8 h-8 rounded-full border border-cream-200 flex items-center justify-center hover:bg-cream-50 transition-colors"
+                            disabled={item.quantity >= item.product.stock_quantity}
+                          >
+                            <PlusIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Subtotal */}
+                        <div className="text-right">
+                          <p className="font-semibold text-charcoal">
+                            {formatPrice(item.product.price * item.quantity)}
+                          </p>
+                          <p className="text-xs text-charcoal/60 mt-1">
+                            {item.product.stock_quantity - item.quantity} left
+                          </p>
+                        </div>
+
+                        {/* Remove Button */}
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 rounded-full border border-cream-200 flex items-center justify-center hover:bg-cream-50 transition-colors"
-                          disabled={item.quantity <= 1}
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Remove from cart"
                         >
-                          <MinusIcon className="w-4 h-4" />
-                        </button>
-
-                        <span className="w-12 text-center font-medium">{item.quantity}</span>
-
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 rounded-full border border-cream-200 flex items-center justify-center hover:bg-cream-50 transition-colors"
-                          disabled={item.quantity >= item.product.stock_quantity}
-                        >
-                          <PlusIcon className="w-4 h-4" />
+                          <TrashIcon className="w-5 h-5" />
                         </button>
                       </div>
-
-                      {/* Subtotal */}
-                      <div className="text-right">
-                        <p className="font-semibold text-charcoal">
-                          {formatPrice(item.product.price * item.quantity)}
-                        </p>
-                        <p className="text-xs text-charcoal/60 mt-1">
-                          {item.product.stock_quantity - item.quantity} left
-                        </p>
-                      </div>
-
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Remove from cart"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
                     </div>
                   ))}
                 </div>
