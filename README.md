@@ -281,3 +281,4 @@ This project is proprietary software for Lumidumi candle business.
 
 For support and questions, contact: hello@lumidumi.com# Trigger deployment with updated environment variables
 # Updated with Razorpay test keys
+# Deploy with Razorpay test keys
