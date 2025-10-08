@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { createCustomOrder } from '@/lib/database'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function CustomOrdersPage() {
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,6 +22,7 @@ export default function CustomOrdersPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [orderId, setOrderId] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -31,11 +35,30 @@ export default function CustomOrdersPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      // Prepare custom order data
+      const customOrderData = {
+        user_id: user?.id || null,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        description: `${formData.description}\n\nEvent: ${formData.eventType}\nQuantity: ${formData.quantity}\nScent: ${formData.scent}\nColor: ${formData.color}\nSize: ${formData.size}\nInspiration: ${formData.inspiration}`.trim(),
+        requirements: `Event: ${formData.eventType}, Quantity: ${formData.quantity}, Scent: ${formData.scent}, Color: ${formData.color}, Size: ${formData.size}`,
+        budget_range: formData.budget || null,
+        deadline: formData.deadline || null,
+        status: 'pending'
+      }
+
+      // Save to database
+      const order = await createCustomOrder(customOrderData)
+      setOrderId(order.id.slice(-6).toUpperCase())
       setSubmitted(true)
-    }, 1500)
+    } catch (error) {
+      console.error('Error submitting custom order:', error)
+      alert('Error submitting your request. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (submitted) {
@@ -50,7 +73,7 @@ export default function CustomOrdersPage() {
             </p>
             <div className="bg-cream-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-charcoal/60">
-                <strong>Order ID:</strong> #CO-{Date.now().toString().slice(-6)}
+                <strong>Order ID:</strong> #CO-{orderId}
               </p>
             </div>
             <button

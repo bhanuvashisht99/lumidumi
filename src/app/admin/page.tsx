@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getAllProducts, getAllOrders, getCategories } from '@/lib/database'
+import { getAllProducts, getAllOrders, getCategories, getCustomOrders } from '@/lib/database'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
@@ -591,29 +591,98 @@ function CustomersTab() {
 }
 
 function CustomOrdersTab() {
+  const [customOrders, setCustomOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchCustomOrders()
+  }, [])
+
+  const fetchCustomOrders = async () => {
+    try {
+      const data = await getCustomOrders()
+      setCustomOrders(data)
+    } catch (error) {
+      console.error('Error fetching custom orders:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    const statusColors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      quoted: 'bg-blue-100 text-blue-800',
+      approved: 'bg-green-100 text-green-800',
+      in_progress: 'bg-purple-100 text-purple-800',
+      completed: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800'
+    }
+
+    return (
+      <span className={`px-3 py-1 text-sm rounded-full font-medium ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading custom orders...</div>
+  }
+
   return (
     <div>
       <h2 className="text-xl font-semibold text-charcoal mb-6">Custom Order Requests</h2>
-      <div className="space-y-4">
-        <div className="p-4 bg-cream-50 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-medium text-charcoal">Wedding Anniversary Candles</p>
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-              Pending Quote
-            </span>
-          </div>
-          <p className="text-sm text-charcoal/60 mb-2">
-            Sarah Johnson • sarah@example.com
-          </p>
-          <p className="text-sm text-charcoal">
-            Looking for custom candles for 25th wedding anniversary with gold accents...
-          </p>
-          <div className="flex space-x-2 mt-4">
-            <button className="btn-secondary text-sm">Send Quote</button>
-            <button className="text-sm text-charcoal/60 hover:text-charcoal">View Details</button>
-          </div>
+
+      {customOrders.length === 0 ? (
+        <div className="text-center py-8 bg-cream-50 rounded-lg">
+          <p className="text-charcoal/60">No custom orders found yet.</p>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {customOrders.map((order) => (
+            <div key={order.id} className="p-4 bg-cream-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-medium text-charcoal">{order.name}</p>
+                {getStatusBadge(order.status)}
+              </div>
+              <p className="text-sm text-charcoal/60 mb-2">
+                {order.name} • {order.email}
+                {order.phone && ` • ${order.phone}`}
+              </p>
+              <p className="text-sm text-charcoal mb-2">
+                {order.description.slice(0, 150)}
+                {order.description.length > 150 && '...'}
+              </p>
+              {order.budget_range && (
+                <p className="text-sm text-charcoal/60 mb-2">
+                  Budget: {order.budget_range}
+                </p>
+              )}
+              {order.deadline && (
+                <p className="text-sm text-charcoal/60 mb-2">
+                  Deadline: {formatDate(order.deadline)}
+                </p>
+              )}
+              <p className="text-xs text-charcoal/50 mb-3">
+                Submitted: {formatDate(order.created_at)}
+              </p>
+              <div className="flex space-x-2">
+                <button className="btn-secondary text-sm">Send Quote</button>
+                <button className="text-sm text-charcoal/60 hover:text-charcoal">View Details</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
