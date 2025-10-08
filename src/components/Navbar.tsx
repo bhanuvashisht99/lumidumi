@@ -81,15 +81,13 @@ export default function Navbar() {
             )}
           </a>
 
-          {/* Show admin link only for admin users */}
-          {isAdmin && (
-            <a
-              href="/admin"
-              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
-            >
-              Admin
-            </a>
-          )}
+          {/* Temporarily show admin link for all users */}
+          <a
+            href="/admin"
+            className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+          >
+            Admin
+          </a>
 
           {/* User authentication */}
           {user ? (
@@ -161,16 +159,14 @@ export default function Navbar() {
                     Cart
                   </a>
 
-                  {/* Show admin link only for admin users */}
-                  {isAdmin && (
-                    <a
-                      href="/admin"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
-                    >
-                      Admin
-                    </a>
-                  )}
+                  {/* Temporarily show admin link for all users */}
+                  <a
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                  >
+                    Admin
+                  </a>
 
                   {/* User authentication */}
                   {user ? (

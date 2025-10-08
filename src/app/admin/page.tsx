@@ -1,15 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getAllProducts, getAllOrders } from '@/lib/database'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
   const { isAdmin, loading, user } = useAuth()
   const router = useRouter()
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    revenue: 0,
+    customRequests: 0
+  })
 
   // Temporarily disable admin check for testing
   // useEffect(() => {
@@ -46,11 +52,46 @@ export default function AdminDashboard() {
   //   )
   // }
 
-  const stats = [
-    { name: 'Total Products', value: '24', change: '+2 this week' },
-    { name: 'Total Orders', value: '156', change: '+12 today' },
-    { name: 'Revenue', value: '₹45,280', change: '+8% this month' },
-    { name: 'Custom Requests', value: '8', change: '3 pending' },
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        // Fetch products count
+        const { count: productsCount } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true)
+
+        // Fetch orders count and revenue
+        const { data: orders, count: ordersCount } = await supabase
+          .from('orders')
+          .select('total_amount', { count: 'exact' })
+
+        // Calculate total revenue
+        const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0
+
+        // Fetch custom orders count
+        const { count: customCount } = await supabase
+          .from('custom_orders')
+          .select('*', { count: 'exact', head: true })
+
+        setStats({
+          totalProducts: productsCount || 0,
+          totalOrders: ordersCount || 0,
+          revenue: totalRevenue,
+          customRequests: customCount || 0
+        })
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  const statsData = [
+    { name: 'Total Products', value: stats.totalProducts.toString(), change: 'Active products' },
+    { name: 'Total Orders', value: stats.totalOrders.toString(), change: 'All time' },
+    { name: 'Revenue', value: `₹${stats.revenue.toLocaleString()}`, change: 'Total earned' },
+    { name: 'Custom Requests', value: stats.customRequests.toString(), change: 'Received' },
   ]
 
   const tabs = [
@@ -72,7 +113,7 @@ export default function AdminDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
+          {statsData.map((stat) => (
             <div key={stat.name} className="card">
               <div className="flex items-center justify-between">
                 <div>
@@ -119,12 +160,182 @@ export default function AdminDashboard() {
 }
 
 function ProductsTab() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stock_quantity: '',
+    category_id: '',
+    image_url: '',
+    weight: '',
+    burn_time: '',
+    scent_description: '',
+    ingredients: '',
+    care_instructions: ''
+  })
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const data = await getAllProducts()
+      setProducts(data)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const productData = {
+        ...newProduct,
+        price: parseFloat(newProduct.price),
+        stock_quantity: parseInt(newProduct.stock_quantity),
+        weight: newProduct.weight ? parseFloat(newProduct.weight) : null,
+        burn_time: newProduct.burn_time ? parseInt(newProduct.burn_time) : null,
+        slug: newProduct.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+        is_active: true,
+        featured: false
+      }
+
+      const { data, error } = await supabase
+        .from('products')
+        .insert([productData])
+        .select()
+
+      if (error) throw error
+
+      setProducts([...products, data[0]])
+      setShowAddForm(false)
+      setNewProduct({
+        name: '',
+        description: '',
+        price: '',
+        stock_quantity: '',
+        category_id: '',
+        image_url: '',
+        weight: '',
+        burn_time: '',
+        scent_description: '',
+        ingredients: '',
+        care_instructions: ''
+      })
+    } catch (error) {
+      console.error('Error adding product:', error)
+      alert('Error adding product. Please try again.')
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading products...</div>
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-charcoal">Products</h2>
-        <button className="btn-primary">Add New Product</button>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="btn-primary"
+        >
+          {showAddForm ? 'Cancel' : 'Add New Product'}
+        </button>
       </div>
+
+      {showAddForm && (
+        <div className="mb-6 p-6 bg-white rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold text-charcoal mb-4">Add New Product</h3>
+          <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Product Name *</label>
+              <input
+                type="text"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Price (₹) *</label>
+              <input
+                type="number"
+                value={newProduct.price}
+                onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                required
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">Description *</label>
+              <textarea
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Stock Quantity *</label>
+              <input
+                type="number"
+                value={newProduct.stock_quantity}
+                onChange={(e) => setNewProduct({...newProduct, stock_quantity: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Image URL</label>
+              <input
+                type="url"
+                value={newProduct.image_url}
+                onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Weight (g)</label>
+              <input
+                type="number"
+                value={newProduct.weight}
+                onChange={(e) => setNewProduct({...newProduct, weight: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Burn Time (hours)</label>
+              <input
+                type="number"
+                value={newProduct.burn_time}
+                onChange={(e) => setNewProduct({...newProduct, burn_time: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">Scent Description</label>
+              <textarea
+                value={newProduct.scent_description}
+                onChange={(e) => setNewProduct({...newProduct, scent_description: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end md:col-span-2">
+              <button type="submit" className="btn-primary">Add Product</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-cream-200">
@@ -134,13 +345,13 @@ function ProductsTab() {
                 Product
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-charcoal/60 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-charcoal/60 uppercase tracking-wider">
                 Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-charcoal/60 uppercase tracking-wider">
                 Stock
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-charcoal/60 uppercase tracking-wider">
+                Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-charcoal/60 uppercase tracking-wider">
                 Actions
@@ -148,26 +359,48 @@ function ProductsTab() {
             </tr>
           </thead>
           <tbody className="divide-y divide-cream-100">
-            <tr>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-cream-100 rounded-lg flex items-center justify-center">
-                    🕯️
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-charcoal">Vanilla Dreams</div>
-                    <div className="text-sm text-charcoal/60">Scented Candle</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">Scented</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">₹899</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">12</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button className="text-cream-300 hover:text-cream-300/80 mr-4">Edit</button>
-                <button className="text-red-600 hover:text-red-500">Delete</button>
-              </td>
-            </tr>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-8 text-center text-charcoal/60">
+                  No products found. Add your first product!
+                </td>
+              </tr>
+            ) : (
+              products.map((product) => (
+                <tr key={product.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-cream-100 rounded-lg flex items-center justify-center">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.name} className="w-10 h-10 rounded-lg object-cover" />
+                        ) : (
+                          '🕯️'
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-charcoal">{product.name}</div>
+                        <div className="text-sm text-charcoal/60">{product.description?.slice(0, 50)}...</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">₹{product.price}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-charcoal">{product.stock_quantity}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      product.is_active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {product.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-cream-300 hover:text-cream-300/80 mr-4">Edit</button>
+                    <button className="text-red-600 hover:text-red-500">Delete</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -176,29 +409,79 @@ function ProductsTab() {
 }
 
 function OrdersTab() {
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const fetchOrders = async () => {
+    try {
+      const data = await getAllOrders()
+      setOrders(data)
+    } catch (error) {
+      console.error('Error fetching orders:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    const statusColors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-blue-100 text-blue-800',
+      processing: 'bg-purple-100 text-purple-800',
+      shipped: 'bg-indigo-100 text-indigo-800',
+      delivered: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
+      completed: 'bg-green-100 text-green-800'
+    }
+
+    return (
+      <span className={`px-3 py-1 text-sm rounded-full font-medium ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading orders...</div>
+  }
+
   return (
     <div>
       <h2 className="text-xl font-semibold text-charcoal mb-6">Recent Orders</h2>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-cream-50 rounded-lg">
-          <div>
-            <p className="font-medium text-charcoal">#ORD-001</p>
-            <p className="text-sm text-charcoal/60">John Doe • 2 items • ₹1,648</p>
-          </div>
-          <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-            Delivered
-          </span>
+
+      {orders.length === 0 ? (
+        <div className="text-center py-8 bg-cream-50 rounded-lg">
+          <p className="text-charcoal/60">No orders found yet.</p>
         </div>
-        <div className="flex items-center justify-between p-4 bg-cream-50 rounded-lg">
-          <div>
-            <p className="font-medium text-charcoal">#ORD-002</p>
-            <p className="text-sm text-charcoal/60">Jane Smith • 1 item • ₹899</p>
-          </div>
-          <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-            Processing
-          </span>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order.id} className="flex items-center justify-between p-4 bg-cream-50 rounded-lg">
+              <div>
+                <p className="font-medium text-charcoal">#{order.id.slice(-8).toUpperCase()}</p>
+                <p className="text-sm text-charcoal/60">
+                  {order.profile?.first_name} {order.profile?.last_name} •
+                  {order.order_items?.length || 0} items • ₹{order.total_amount?.toLocaleString()}
+                </p>
+                <p className="text-xs text-charcoal/50">{formatDate(order.created_at)}</p>
+              </div>
+              {getStatusBadge(order.status)}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   )
 }
