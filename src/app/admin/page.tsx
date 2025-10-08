@@ -203,7 +203,7 @@ function OrdersTab() {
 }
 
 function CustomersTab() {
-  const [customers, setCustomers] = useState([])
+  const [customers, setCustomers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

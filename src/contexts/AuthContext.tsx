@@ -36,6 +36,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
+
+        // Create profile if user just signed in and profile doesn't exist
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .single()
+
+          if (!existingProfile) {
+            // Create profile if it doesn't exist
+            const fullName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
+            const [firstName, ...lastNameParts] = fullName.split(' ')
+            const lastName = lastNameParts.join(' ')
+
+            await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                email: session.user.email,
+                first_name: firstName || 'User',
+                last_name: lastName || '',
+                role: 'customer'
+              })
+          }
+        }
+
         checkAdminStatus(session?.user ?? null)
         setLoading(false)
       }
