@@ -23,35 +23,9 @@ export default function AdminDashboard() {
     }
   }, [loading, user, isAdmin, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
-          <p className="mt-4 text-charcoal">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user || !isAdmin) {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-charcoal mb-4">Access Denied</h1>
-          <p className="text-charcoal/60 mb-6">You need admin privileges to access this page.</p>
-          <a
-            href="/login"
-            className="btn-primary"
-          >
-            Sign In
-          </a>
-        </div>
-      </div>
-    )
-  }
-
   useEffect(() => {
+    if (!user || !isAdmin || loading) return
+
     async function fetchStats() {
       try {
         // Fetch products count
@@ -84,7 +58,7 @@ export default function AdminDashboard() {
       }
     }
     fetchStats()
-  }, [])
+  }, [user, isAdmin, loading])
 
   const statsData = [
     { name: 'Total Products', value: stats.totalProducts.toString(), change: 'Active products' },
@@ -100,6 +74,34 @@ export default function AdminDashboard() {
     { id: 'custom', name: 'Custom Orders', icon: '🎨' },
     { id: 'content', name: 'Content', icon: '📝' },
   ]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
+          <p className="mt-4 text-charcoal">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-charcoal mb-4">Access Denied</h1>
+          <p className="text-charcoal/60 mb-6">You need admin privileges to access this page.</p>
+          <a
+            href="/login"
+            className="btn-primary"
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-cream-50">
