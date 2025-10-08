@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createCustomOrder } from '@/lib/database'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function CustomOrdersPage() {
@@ -49,8 +48,21 @@ export default function CustomOrdersPage() {
         status: 'pending'
       }
 
-      // Save to database
-      const order = await createCustomOrder(customOrderData)
+      // Save to database via API
+      const response = await fetch('/api/custom-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customOrderData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create custom order')
+      }
+
+      const { data: order } = await response.json()
       setOrderId(order.id.slice(-6).toUpperCase())
       setSubmitted(true)
     } catch (error) {
