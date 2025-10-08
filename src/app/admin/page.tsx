@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getAllProducts, getAllOrders } from '@/lib/database'
+import { getAllProducts, getAllOrders, getCategories } from '@/lib/database'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
@@ -160,6 +160,7 @@ export default function AdminDashboard() {
 
 function ProductsTab() {
   const [products, setProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newProduct, setNewProduct] = useState({
@@ -178,6 +179,7 @@ function ProductsTab() {
 
   useEffect(() => {
     fetchProducts()
+    fetchCategories()
   }, [])
 
   const fetchProducts = async () => {
@@ -191,6 +193,15 @@ function ProductsTab() {
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const data = await getCategories()
+      setCategories(data)
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -200,19 +211,28 @@ function ProductsTab() {
         stock_quantity: parseInt(newProduct.stock_quantity),
         weight: newProduct.weight ? parseFloat(newProduct.weight) : null,
         burn_time: newProduct.burn_time ? parseInt(newProduct.burn_time) : null,
+        category_id: newProduct.category_id || null, // Handle empty string as null
         slug: newProduct.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
         is_active: true,
         featured: false
       }
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select()
+      // Use admin API route to bypass RLS
+      const response = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create product')
+      }
 
-      setProducts([...products, data[0]])
+      const { data } = await response.json()
+      setProducts([...products, data])
       setShowAddForm(false)
       setNewProduct({
         name: '',
@@ -229,7 +249,7 @@ function ProductsTab() {
       })
     } catch (error) {
       console.error('Error adding product:', error)
-      alert('Error adding product. Please try again.')
+      alert(`Error adding product: ${error.message}`)
     }
   }
 
@@ -292,6 +312,21 @@ function ProductsTab() {
                 className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
                 required
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Category</label>
+              <select
+                value={newProduct.category_id}
+                onChange={(e) => setNewProduct({...newProduct, category_id: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-charcoal mb-2">Image URL</label>
