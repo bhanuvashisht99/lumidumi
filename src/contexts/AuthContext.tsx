@@ -82,15 +82,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: { message: 'Supabase not configured' } }
     }
 
-    const { error } = await supabase.auth.signUp({
+    const [firstName, ...lastNameParts] = fullName.split(' ')
+    const lastName = lastNameParts.join(' ')
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+          first_name: firstName,
+          last_name: lastName
         }
       }
     })
+
+    // If signup successful and user is created, create profile
+    if (!error && data.user) {
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            first_name: firstName,
+            last_name: lastName,
+            role: 'customer'
+          })
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError)
+        }
+      } catch (profileError) {
+        console.error('Error creating profile:', profileError)
+      }
+    }
 
     return { error }
   }

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,14 +42,42 @@ export async function POST(request: NextRequest) {
     const isSignatureValid = expectedSignature === razorpay_signature
 
     if (isSignatureValid) {
-      // Payment is verified
-      // Here you can update your database, send confirmation emails, etc.
+      // Payment is verified - save order to database
+      try {
+        const { orderDetails } = await request.json()
 
-      return NextResponse.json({
-        verified: true,
-        payment_id: razorpay_payment_id,
-        order_id: razorpay_order_id,
-      })
+        // Create order record in database
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            razorpay_order_id,
+            razorpay_payment_id,
+            amount: orderDetails.total,
+            status: 'completed',
+            items: orderDetails.items,
+            customer_info: orderDetails.customerInfo
+          })
+          .select()
+
+        if (orderError) {
+          console.error('Error saving order:', orderError)
+        }
+
+        return NextResponse.json({
+          verified: true,
+          payment_id: razorpay_payment_id,
+          order_id: razorpay_order_id,
+          order_data: order?.[0]
+        })
+      } catch (dbError) {
+        console.error('Database error:', dbError)
+        // Still return success since payment was verified
+        return NextResponse.json({
+          verified: true,
+          payment_id: razorpay_payment_id,
+          order_id: razorpay_order_id,
+        })
+      }
     } else {
       return NextResponse.json(
         { error: 'Payment verification failed' },

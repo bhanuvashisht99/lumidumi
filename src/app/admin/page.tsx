@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
@@ -202,17 +203,67 @@ function OrdersTab() {
 }
 
 function CustomersTab() {
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchCustomers() {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching customers:', error)
+        } else {
+          setCustomers(data || [])
+        }
+      } catch (error) {
+        console.error('Error:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCustomers()
+  }, [])
+
+  if (loading) {
+    return <div className="text-center py-8">Loading customers...</div>
+  }
+
   return (
     <div>
-      <h2 className="text-xl font-semibold text-charcoal mb-6">Customers</h2>
+      <h2 className="text-xl font-semibold text-charcoal mb-6">Customers ({customers.length})</h2>
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-cream-50 rounded-lg">
-          <div>
-            <p className="font-medium text-charcoal">John Doe</p>
-            <p className="text-sm text-charcoal/60">john@example.com • 3 orders</p>
+        {customers.map((customer) => (
+          <div key={customer.id} className="flex items-center justify-between p-4 bg-cream-50 rounded-lg">
+            <div>
+              <p className="font-medium text-charcoal">
+                {customer.first_name} {customer.last_name}
+              </p>
+              <p className="text-sm text-charcoal/60">
+                {customer.email} • {customer.role}
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-sm text-charcoal/60">
+                Joined: {new Date(customer.created_at).toLocaleDateString()}
+              </span>
+              {customer.role === 'admin' && (
+                <div className="text-xs bg-cream-300 text-white px-2 py-1 rounded mt-1">
+                  Admin
+                </div>
+              )}
+            </div>
           </div>
-          <span className="text-sm text-charcoal/60">Last order: 2 days ago</span>
-        </div>
+        ))}
+        {customers.length === 0 && (
+          <div className="text-center py-8 text-charcoal/60">
+            No customers found
+          </div>
+        )}
       </div>
     </div>
   )
