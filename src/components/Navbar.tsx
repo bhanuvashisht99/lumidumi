@@ -81,19 +81,18 @@ export default function Navbar() {
             )}
           </a>
 
-          {/* Show admin link only for admin users */}
-          {isAdmin && (
-            <a
-              href="/admin"
-              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
-            >
-              Admin
-            </a>
-          )}
-
           {/* User authentication */}
           {user ? (
             <div className="flex items-center gap-x-4">
+              {/* Show admin link only for admin users */}
+              {isAdmin && (
+                <a
+                  href="/admin"
+                  className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+                >
+                  Admin
+                </a>
+              )}
               <a
                 href="/profile"
                 className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"

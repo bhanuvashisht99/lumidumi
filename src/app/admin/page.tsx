@@ -217,6 +217,9 @@ function ProductsTab() {
         featured: false
       }
 
+      // Debug: Log the data being sent
+      console.log('Sending product data:', productData)
+
       // Use admin API route to bypass RLS
       const response = await fetch('/api/admin/products', {
         method: 'POST',
