@@ -255,7 +255,7 @@ function ProductsTab() {
       })
     } catch (error) {
       console.error('Error adding product:', error)
-      alert(`Error adding product: ${error.message}`)
+      alert(`Error adding product: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

@@ -8,7 +8,7 @@ const supabase = createClient(
 )
 
 // Configure nodemailer transporter (conditionally)
-let transporter = null
+let transporter: any = null
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   if (process.env.EMAIL_HOST) {
     // Custom SMTP configuration
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Quote updated successfully, but email notification failed',
           data: data[0],
-          emailError: emailError.message
+          emailError: emailError instanceof Error ? emailError.message : 'Unknown email error'
         })
       }
     } else {
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Send quote error:', error)
     return NextResponse.json(
-      { error: 'Failed to send quote', details: error.message },
+      { error: 'Failed to send quote', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
