@@ -595,6 +595,14 @@ function CustomersTab() {
 function CustomOrdersTab() {
   const [customOrders, setCustomOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [showQuoteModal, setShowQuoteModal] = useState(false)
+  const [quoteData, setQuoteData] = useState({
+    quotedPrice: '',
+    adminNotes: '',
+    deliveryTime: '',
+    terms: ''
+  })
 
   useEffect(() => {
     fetchCustomOrders()
@@ -634,6 +642,64 @@ function CustomOrdersTab() {
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const handleSendQuote = (order: any) => {
+    setSelectedOrder(order)
+    setQuoteData({
+      quotedPrice: '',
+      adminNotes: '',
+      deliveryTime: '',
+      terms: 'Payment: 50% advance, 50% on delivery\nCustomizations included as discussed\nDelivery charges may apply based on location'
+    })
+    setShowQuoteModal(true)
+  }
+
+  const submitQuote = async () => {
+    if (!selectedOrder || !quoteData.quotedPrice) {
+      alert('Please enter a quoted price')
+      return
+    }
+
+    try {
+      // Update order with quote details
+      const response = await fetch('/api/admin/send-quote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          quotedPrice: parseFloat(quoteData.quotedPrice),
+          adminNotes: quoteData.adminNotes,
+          deliveryTime: quoteData.deliveryTime,
+          terms: quoteData.terms,
+          customerEmail: selectedOrder.email,
+          customerName: selectedOrder.name,
+          orderDescription: selectedOrder.description
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send quote')
+      }
+
+      // Update local state
+      setCustomOrders(orders =>
+        orders.map(order =>
+          order.id === selectedOrder.id
+            ? { ...order, status: 'quoted', quoted_price: parseFloat(quoteData.quotedPrice) }
+            : order
+        )
+      )
+
+      setShowQuoteModal(false)
+      setSelectedOrder(null)
+      alert('Quote sent successfully!')
+    } catch (error) {
+      console.error('Error sending quote:', error)
+      alert('Error sending quote. Please try again.')
+    }
   }
 
   if (loading) {
@@ -678,11 +744,101 @@ function CustomOrdersTab() {
                 Submitted: {formatDate(order.created_at)}
               </p>
               <div className="flex space-x-2">
-                <button className="btn-secondary text-sm">Send Quote</button>
+                <button
+                  onClick={() => handleSendQuote(order)}
+                  className="btn-secondary text-sm"
+                  disabled={order.status === 'quoted'}
+                >
+                  {order.status === 'quoted' ? 'Quote Sent' : 'Send Quote'}
+                </button>
                 <button className="text-sm text-charcoal/60 hover:text-charcoal">View Details</button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Quote Modal */}
+      {showQuoteModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-charcoal mb-4">
+              Send Quote for {selectedOrder.name}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-2">
+                  Quoted Price (₹) *
+                </label>
+                <input
+                  type="number"
+                  value={quoteData.quotedPrice}
+                  onChange={(e) => setQuoteData({...quoteData, quotedPrice: e.target.value})}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                  placeholder="Enter price in rupees"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-2">
+                  Delivery Time
+                </label>
+                <input
+                  type="text"
+                  value={quoteData.deliveryTime}
+                  onChange={(e) => setQuoteData({...quoteData, deliveryTime: e.target.value})}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                  placeholder="e.g., 7-10 business days"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-2">
+                  Admin Notes
+                </label>
+                <textarea
+                  value={quoteData.adminNotes}
+                  onChange={(e) => setQuoteData({...quoteData, adminNotes: e.target.value})}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                  rows={3}
+                  placeholder="Internal notes about this quote"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-2">
+                  Terms & Conditions
+                </label>
+                <textarea
+                  value={quoteData.terms}
+                  onChange={(e) => setQuoteData({...quoteData, terms: e.target.value})}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                  rows={4}
+                  placeholder="Terms and conditions for this order"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowQuoteModal(false)
+                  setSelectedOrder(null)
+                }}
+                className="px-4 py-2 text-charcoal/60 hover:text-charcoal"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitQuote}
+                className="btn-primary"
+              >
+                Send Quote
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

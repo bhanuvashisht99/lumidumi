@@ -163,8 +163,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-charcoal mb-1">Visit our studio</h3>
                     <p className="text-charcoal/60">
-                      123 Artisan Lane<br />
-                      Craftsville, CS 12345<br />
+                      Delhi<br />
                       India
                     </p>
                   </div>
@@ -174,7 +173,7 @@ export default function ContactPage() {
                   <div className="text-2xl">📞</div>
                   <div>
                     <h3 className="font-semibold text-charcoal mb-1">Call us</h3>
-                    <p className="text-charcoal/60">+91 98765 43210</p>
+                    <p className="text-charcoal/60">+91 93548 51086</p>
                   </div>
                 </div>
 
@@ -182,7 +181,7 @@ export default function ContactPage() {
                   <div className="text-2xl">✉️</div>
                   <div>
                     <h3 className="font-semibold text-charcoal mb-1">Email us</h3>
-                    <p className="text-charcoal/60">hello@lumidumi.com</p>
+                    <p className="text-charcoal/60">team@lumidumi.com</p>
                   </div>
                 </div>
 

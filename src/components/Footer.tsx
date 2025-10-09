@@ -51,9 +51,9 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Contact Info</h4>
             <div className="space-y-2 text-white/70">
-              <p>📧 hello@lumidumi.com</p>
-              <p>📱 +91 98765 43210</p>
-              <p>📍 Mumbai, India</p>
+              <p>📧 team@lumidumi.com</p>
+              <p>📱 +91 93548 51086</p>
+              <p>📍 Delhi, India</p>
             </div>
           </div>
         </div>

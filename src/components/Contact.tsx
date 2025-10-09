@@ -99,7 +99,7 @@ export default function Contact() {
                   <span className="text-xl">📧</span>
                   <div>
                     <p className="font-medium text-charcoal">Email</p>
-                    <p className="text-charcoal/60">hello@lumidumi.com</p>
+                    <p className="text-charcoal/60">team@lumidumi.com</p>
                   </div>
                 </div>
 
@@ -107,7 +107,7 @@ export default function Contact() {
                   <span className="text-xl">📱</span>
                   <div>
                     <p className="font-medium text-charcoal">Phone</p>
-                    <p className="text-charcoal/60">+91 98765 43210</p>
+                    <p className="text-charcoal/60">+91 93548 51086</p>
                   </div>
                 </div>
 
@@ -115,7 +115,7 @@ export default function Contact() {
                   <span className="text-xl">📍</span>
                   <div>
                     <p className="font-medium text-charcoal">Location</p>
-                    <p className="text-charcoal/60">Mumbai, India</p>
+                    <p className="text-charcoal/60">Delhi, India</p>
                   </div>
                 </div>
               </div>
