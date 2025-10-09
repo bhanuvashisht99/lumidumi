@@ -11,6 +11,9 @@ export default function Navbar() {
   const { isAdmin, user, signOut } = useAuth()
   const { getTotalItems } = useCart()
 
+  // Debug logging
+  console.log('Navbar render - mobileMenuOpen:', mobileMenuOpen)
+
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Products', href: '/products' },
@@ -47,11 +50,14 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-charcoal hover:bg-cream-50 z-[80] relative"
-            onClick={() => setMobileMenuOpen(true)}
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-cream-200 bg-white text-charcoal hover:bg-cream-50 shadow-sm transition-all duration-200 active:scale-95"
+            onClick={() => {
+              console.log('Mobile menu button clicked!')
+              setMobileMenuOpen(true)
+            }}
             aria-label="Open mobile menu"
           >
-            <Bars3Icon className="h-6 w-6" />
+            <Bars3Icon className="h-5 w-5" />
           </button>
         </div>
 
@@ -118,95 +124,107 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden">
-          <div
-            className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="fixed inset-y-0 right-0 z-[70] w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm shadow-2xl border-l-2 border-cream-300">
-            <div className="flex items-center justify-between">
-              <a href="/" className="-m-1.5 p-1.5 flex items-center">
-                <Logo width={40} height={40} showText={false} />
-              </a>
-              <button
-                type="button"
-                className="-m-2.5 rounded-md p-2.5 text-charcoal"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
+      {/* Mobile menu - Completely remade */}
+      <div className={`lg:hidden fixed inset-0 z-50 ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+
+        {/* Menu Panel */}
+        <div className="absolute top-0 right-0 h-full w-80 max-w-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-cream-200">
+            <Logo width={32} height={32} showText={false} />
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 rounded-lg hover:bg-cream-50 transition-colors"
+              aria-label="Close menu"
+            >
+              <XMarkIcon className="h-6 w-6 text-charcoal" />
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="p-6 space-y-4">
+            {/* Main Navigation */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-charcoal/60 uppercase tracking-wider mb-3">Navigation</h3>
+              {navigation.map((item) => (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 px-4 text-base font-medium text-charcoal hover:bg-cream-50 rounded-lg transition-colors"
+                >
+                  {item.name}
+                </a>
+              ))}
             </div>
-            <div className="mt-8 flow-root">
-              <div className="-my-6 divide-y divide-cream-200">
-                <div className="space-y-1 py-6">
-                  {navigation.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
-                    >
-                      {item.name}
-                    </a>
-                  ))}
-                </div>
-                <div className="py-6 space-y-1">
+
+            {/* Account & Actions */}
+            <div className="border-t border-cream-200 pt-4 space-y-2">
+              <h3 className="text-sm font-medium text-charcoal/60 uppercase tracking-wider mb-3">Account</h3>
+
+              {/* Cart */}
+              <a
+                href="/cart"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between py-3 px-4 text-base font-medium text-charcoal hover:bg-cream-50 rounded-lg transition-colors"
+              >
+                <span>Shopping Cart</span>
+                {getTotalItems() > 0 && (
+                  <span className="bg-cream-300 text-white text-xs rounded-full px-2 py-1 font-bold">
+                    {getTotalItems()}
+                  </span>
+                )}
+              </a>
+
+              {/* Admin Link */}
+              {isAdmin && (
+                <a
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 px-4 text-base font-medium text-cream-300 hover:bg-cream-50 rounded-lg transition-colors"
+                >
+                  Admin Panel
+                </a>
+              )}
+
+              {/* User Authentication */}
+              {user ? (
+                <>
                   <a
-                    href="/cart"
+                    href="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
+                    className="block py-3 px-4 text-base font-medium text-charcoal hover:bg-cream-50 rounded-lg transition-colors"
                   >
-                    🛒 Cart {getTotalItems() > 0 && `(${getTotalItems()})`}
+                    My Account
                   </a>
-
-                  {/* Show admin link only for admin users */}
-                  {isAdmin && (
-                    <a
-                      href="/admin"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-cream-300 hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
-                    >
-                      👨‍💼 Admin
-                    </a>
-                  )}
-
-                  {/* User authentication */}
-                  {user ? (
-                    <>
-                      <a
-                        href="/profile"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
-                      >
-                        👤 My Account
-                      </a>
-                      <button
-                        onClick={() => {
-                          signOut()
-                          setMobileMenuOpen(false)
-                        }}
-                        className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-red-600 hover:bg-red-50 w-full text-left transition-colors border-l-4 border-transparent hover:border-red-300"
-                      >
-                        🚪 Sign Out
-                      </button>
-                    </>
-                  ) : (
-                    <a
-                      href="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-4 py-3 text-base font-bold leading-7 text-cream-300 hover:bg-cream-50 transition-colors border-l-4 border-cream-300 bg-cream-50/50"
-                    >
-                      🔐 Sign In
-                    </a>
-                  )}
-                </div>
-              </div>
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full text-left py-3 px-4 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <a
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 px-4 text-base font-bold text-white bg-cream-300 hover:bg-cream-400 rounded-lg transition-colors text-center"
+                >
+                  Sign In
+                </a>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </header>
   )
 }
