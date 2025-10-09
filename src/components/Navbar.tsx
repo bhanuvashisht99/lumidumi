@@ -124,7 +124,7 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-black/20"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-4 py-4 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 shadow-lg">
+          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 shadow-xl border-l border-cream-200">
             <div className="flex items-center justify-between">
               <a href="/" className="-m-1.5 p-1.5 flex items-center">
                 <Logo width={40} height={40} showText={false} />
@@ -137,27 +137,27 @@ export default function Navbar() {
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            <div className="mt-6 flow-root">
-              <div className="-my-6 divide-y divide-gray-500/10">
-                <div className="space-y-2 py-6">
+            <div className="mt-8 flow-root">
+              <div className="-my-6 divide-y divide-cream-200">
+                <div className="space-y-1 py-6">
                   {navigation.map((item) => (
                     <a
                       key={item.name}
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                      className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
                     >
                       {item.name}
                     </a>
                   ))}
                 </div>
-                <div className="py-6">
+                <div className="py-6 space-y-1">
                   <a
                     href="/cart"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                    className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
                   >
-                    Cart
+                    🛒 Cart {getTotalItems() > 0 && `(${getTotalItems()})`}
                   </a>
 
                   {/* Show admin link only for admin users */}
@@ -165,9 +165,9 @@ export default function Navbar() {
                     <a
                       href="/admin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                      className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-cream-300 hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
                     >
-                      Admin
+                      👨‍💼 Admin
                     </a>
                   )}
 
@@ -177,27 +177,27 @@ export default function Navbar() {
                       <a
                         href="/profile"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                        className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 transition-colors border-l-4 border-transparent hover:border-cream-300"
                       >
-                        My Account
+                        👤 My Account
                       </a>
                       <button
                         onClick={() => {
                           signOut()
                           setMobileMenuOpen(false)
                         }}
-                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50 w-full text-left"
+                        className="-mx-3 block rounded-lg px-4 py-3 text-base font-semibold leading-7 text-red-600 hover:bg-red-50 w-full text-left transition-colors border-l-4 border-transparent hover:border-red-300"
                       >
-                        Sign Out
+                        🚪 Sign Out
                       </button>
                     </>
                   ) : (
                     <a
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-charcoal hover:bg-cream-50"
+                      className="-mx-3 block rounded-lg px-4 py-3 text-base font-bold leading-7 text-cream-300 hover:bg-cream-50 transition-colors border-l-4 border-cream-300 bg-cream-50/50"
                     >
-                      Sign In
+                      🔐 Sign In
                     </a>
                   )}
                 </div>

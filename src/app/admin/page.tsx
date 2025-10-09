@@ -1115,6 +1115,22 @@ function ContentTab() {
     ]
   })
 
+  const [customOrderPricing, setCustomOrderPricing] = useState({
+    title: 'Custom Order Pricing',
+    startingPrices: [
+      { item: 'Small candles', price: '₹300 - ₹500 each' },
+      { item: 'Medium candles', price: '₹600 - ₹900 each' },
+      { item: 'Large candles', price: '₹1,000 - ₹1,500 each' },
+      { item: 'Bulk orders', price: 'Special pricing available' }
+    ],
+    additionalServices: [
+      { service: 'Custom packaging', price: '₹50 - ₹200 per piece' },
+      { service: 'Personalized labels', price: '₹25 per piece' },
+      { service: 'Rush orders (under 5 days)', price: '+50%' },
+      { service: 'Delivery within city', price: '₹200 - ₹500' }
+    ]
+  })
+
   const [aboutContent, setAboutContent] = useState({
     title: 'Crafted with Love',
     subtitle: 'At Lumidumi, every candle tells a story.',
@@ -1128,8 +1144,43 @@ function ContentTab() {
   })
 
   const handleSave = async (section: string) => {
-    // TODO: Implement save functionality with Supabase
-    console.log(`Saving ${section} content...`)
+    try {
+      let contentData
+      switch (section) {
+        case 'hero':
+          contentData = heroContent
+          break
+        case 'about':
+          contentData = aboutContent
+          break
+        case 'pricing':
+          contentData = customOrderPricing
+          break
+        default:
+          throw new Error('Unknown section')
+      }
+
+      const response = await fetch('/api/admin/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          section,
+          data: contentData
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save content')
+      }
+
+      alert(`${section.charAt(0).toUpperCase() + section.slice(1)} content saved successfully!`)
+    } catch (error) {
+      console.error('Error saving content:', error)
+      alert(`Error saving content: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   return (
@@ -1156,6 +1207,16 @@ function ContentTab() {
             }`}
           >
             About Section
+          </button>
+          <button
+            onClick={() => setSelectedSection('pricing')}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${
+              selectedSection === 'pricing'
+                ? 'bg-cream-300 text-white'
+                : 'bg-cream-100 text-charcoal hover:bg-cream-200'
+            }`}
+          >
+            Custom Orders Pricing
           </button>
         </div>
       </div>
@@ -1359,6 +1420,97 @@ function ContentTab() {
             className="btn-primary"
           >
             Save About Content
+          </button>
+        </div>
+      )}
+
+      {selectedSection === 'pricing' && (
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Section Title
+            </label>
+            <input
+              type="text"
+              value={customOrderPricing.title}
+              onChange={(e) => setCustomOrderPricing({ ...customOrderPricing, title: e.target.value })}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-4">
+              Starting Prices
+            </label>
+            <div className="space-y-3">
+              {customOrderPricing.startingPrices.map((pricing, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-cream-50 rounded-lg">
+                  <input
+                    type="text"
+                    value={pricing.item}
+                    onChange={(e) => {
+                      const newPrices = [...customOrderPricing.startingPrices]
+                      newPrices[index].item = e.target.value
+                      setCustomOrderPricing({ ...customOrderPricing, startingPrices: newPrices })
+                    }}
+                    className="px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="Item name"
+                  />
+                  <input
+                    type="text"
+                    value={pricing.price}
+                    onChange={(e) => {
+                      const newPrices = [...customOrderPricing.startingPrices]
+                      newPrices[index].price = e.target.value
+                      setCustomOrderPricing({ ...customOrderPricing, startingPrices: newPrices })
+                    }}
+                    className="px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="Price range"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-4">
+              Additional Services
+            </label>
+            <div className="space-y-3">
+              {customOrderPricing.additionalServices.map((service, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-cream-50 rounded-lg">
+                  <input
+                    type="text"
+                    value={service.service}
+                    onChange={(e) => {
+                      const newServices = [...customOrderPricing.additionalServices]
+                      newServices[index].service = e.target.value
+                      setCustomOrderPricing({ ...customOrderPricing, additionalServices: newServices })
+                    }}
+                    className="px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="Service name"
+                  />
+                  <input
+                    type="text"
+                    value={service.price}
+                    onChange={(e) => {
+                      const newServices = [...customOrderPricing.additionalServices]
+                      newServices[index].price = e.target.value
+                      setCustomOrderPricing({ ...customOrderPricing, additionalServices: newServices })
+                    }}
+                    className="px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                    placeholder="Price"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => handleSave('pricing')}
+            className="btn-primary"
+          >
+            Save Pricing Content
           </button>
         </div>
       )}
