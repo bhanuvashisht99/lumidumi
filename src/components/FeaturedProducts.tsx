@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { getProducts, Product } from '@/lib/database'
 import { useCart } from '@/contexts/CartContext'
 
@@ -8,6 +9,7 @@ export default function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
+  const router = useRouter()
 
   const loadProducts = async () => {
     try {
@@ -182,7 +184,10 @@ export default function FeaturedProducts() {
         )}
 
         <div className="text-center mt-12">
-          <button className="btn-primary text-lg px-8 py-4">
+          <button
+            onClick={() => router.push('/products')}
+            className="btn-primary text-lg px-8 py-4 hover:bg-cream-300/90 transition-colors"
+          >
             View All Products
           </button>
         </div>
