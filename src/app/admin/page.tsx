@@ -1177,6 +1177,11 @@ function ContentTab() {
       }
 
       alert(`${section.charAt(0).toUpperCase() + section.slice(1)} content saved successfully!`)
+
+      // Broadcast content update event to frontend
+      if (typeof window !== 'undefined') {
+        window.postMessage({ type: 'CONTENT_UPDATED', section }, '*')
+      }
     } catch (error) {
       console.error('Error saving content:', error)
       alert(`Error saving content: ${error instanceof Error ? error.message : 'Unknown error'}`)

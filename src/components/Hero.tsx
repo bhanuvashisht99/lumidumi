@@ -1,9 +1,56 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Logo from './Logo'
 
 export default function Hero() {
+  const [heroContent, setHeroContent] = useState({
+    title: 'Lumidumi',
+    subtitle: 'Handcrafted candles that illuminate your space with warmth and elegance.',
+    description: 'Each candle is lovingly made with premium wax and carefully selected fragrances.',
+    imageUrl: '',
+    stats: [
+      { value: '100%', label: 'Natural Wax' },
+      { value: '50+', label: 'Unique Scents' },
+      { value: '24h', label: 'Burn Time' }
+    ]
+  })
+  const [loading, setLoading] = useState(true)
+
+  const loadHeroContent = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/admin/content?section=hero')
+      if (response.ok) {
+        const { data } = await response.json()
+        if (data && data.additional_data) {
+          setHeroContent(data.additional_data)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading hero content:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadHeroContent()
+
+    // Listen for content updates from admin panel
+    const handleContentUpdate = (event: MessageEvent) => {
+      if (event.data.type === 'CONTENT_UPDATED' && event.data.section === 'hero') {
+        console.log('Received hero content update notification, refreshing...')
+        loadHeroContent()
+      }
+    }
+
+    window.addEventListener('message', handleContentUpdate)
+
+    return () => {
+      window.removeEventListener('message', handleContentUpdate)
+    }
+  }, [])
   return (
     <section className="relative bg-gradient-to-b from-cream-50 to-cream-100 min-h-screen flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -15,12 +62,16 @@ export default function Hero() {
                 <Logo width={80} height={80} showText={false} className="text-charcoal sm:w-24 sm:h-24 lg:w-32 lg:h-32" />
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-charcoal leading-tight">
-                Lumidumi
+                {heroContent.title}
               </h1>
               <p className="text-lg sm:text-xl text-charcoal/80 leading-relaxed">
-                Handcrafted candles that illuminate your space with warmth and elegance.
-                Each candle is lovingly made with premium wax and carefully selected fragrances.
+                {heroContent.subtitle}
               </p>
+              {heroContent.description && (
+                <p className="text-base text-charcoal/70 leading-relaxed">
+                  {heroContent.description}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -33,28 +84,30 @@ export default function Hero() {
             </div>
 
             <div className="grid grid-cols-3 gap-8 pt-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-cream-300">100%</div>
-                <div className="text-sm text-charcoal/60">Natural Wax</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-cream-300">50+</div>
-                <div className="text-sm text-charcoal/60">Unique Scents</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-cream-300">24h</div>
-                <div className="text-sm text-charcoal/60">Burn Time</div>
-              </div>
+              {heroContent.stats.map((stat, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-2xl font-bold text-cream-300">{stat.value}</div>
+                  <div className="text-sm text-charcoal/60">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Image Placeholder */}
+          {/* Image */}
           <div className="relative">
-            <div className="aspect-square bg-cream-200 rounded-2xl shadow-2xl flex items-center justify-center">
-              <div className="text-center text-charcoal/40">
-                <div className="text-6xl mb-4">🕯️</div>
-                <p className="text-lg">Beautiful Candle Image</p>
-              </div>
+            <div className="aspect-square bg-cream-200 rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
+              {heroContent.imageUrl ? (
+                <img
+                  src={heroContent.imageUrl}
+                  alt={heroContent.title}
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+              ) : (
+                <div className="text-center text-charcoal/40">
+                  <div className="text-6xl mb-4">🕯️</div>
+                  <p className="text-lg">Beautiful Candle Image</p>
+                </div>
+              )}
             </div>
             {/* Decorative elements */}
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-cream-300/20 rounded-full"></div>

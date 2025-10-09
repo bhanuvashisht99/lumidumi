@@ -47,8 +47,9 @@ export default function Navbar() {
           {/* Mobile menu button */}
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-charcoal hover:bg-cream-50"
+            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-charcoal hover:bg-cream-50 z-[80] relative"
             onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open mobile menu"
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
@@ -121,10 +122,10 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="lg:hidden">
           <div
-            className="fixed inset-0 z-40 bg-black/20"
+            className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10 shadow-xl border-l border-cream-200">
+          <div className="fixed inset-y-0 right-0 z-[70] w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm shadow-2xl border-l-2 border-cream-300">
             <div className="flex items-center justify-between">
               <a href="/" className="-m-1.5 p-1.5 flex items-center">
                 <Logo width={40} height={40} showText={false} />
