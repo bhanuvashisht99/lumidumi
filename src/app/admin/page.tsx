@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getAllProducts, getAllOrders, getCategories, getCustomOrders } from '@/lib/database'
+import ImageUpload from '@/components/ImageUpload'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
@@ -333,14 +334,23 @@ function ProductsTab() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-charcoal mb-2">Image URL</label>
-              <input
-                type="url"
-                value={newProduct.image_url}
-                onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
-                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">Product Image</label>
+              <ImageUpload
+                currentImage={newProduct.image_url}
+                onImageUploaded={(url) => setNewProduct({...newProduct, image_url: url})}
+                productName={newProduct.name}
               />
+              {/* Manual URL input as fallback */}
+              <div className="mt-3">
+                <input
+                  type="url"
+                  value={newProduct.image_url}
+                  onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 text-sm"
+                  placeholder="Or paste image URL directly"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-charcoal mb-2">Weight (g)</label>
