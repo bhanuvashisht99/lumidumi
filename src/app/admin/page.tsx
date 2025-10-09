@@ -24,6 +24,14 @@ export default function AdminDashboard() {
     }
   }, [loading, user, isAdmin, router])
 
+  // Reset loading state when user changes
+  useEffect(() => {
+    if (user && isAdmin) {
+      // Ensure we're not stuck in loading state when user is valid
+      setStats(prev => ({ ...prev }))
+    }
+  }, [user, isAdmin])
+
   useEffect(() => {
     if (!user || !isAdmin || loading) return
 
@@ -76,7 +84,8 @@ export default function AdminDashboard() {
     { id: 'content', name: 'Content', icon: '📝' },
   ]
 
-  if (loading) {
+  // Show loading only when first loading auth, not when switching tabs
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-cream-50 flex items-center justify-center">
         <div className="text-center">
@@ -87,7 +96,7 @@ export default function AdminDashboard() {
     )
   }
 
-  if (!user || !isAdmin) {
+  if (!loading && (!user || !isAdmin)) {
     return (
       <div className="min-h-screen bg-cream-50 flex items-center justify-center">
         <div className="text-center">
@@ -130,12 +139,12 @@ export default function AdminDashboard() {
 
         {/* Navigation Tabs */}
         <div className="border-b border-cream-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex flex-wrap gap-x-4 gap-y-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                className={`py-2 px-3 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-cream-300 text-cream-300'
                     : 'border-transparent text-charcoal/60 hover:text-charcoal hover:border-charcoal/30'
@@ -1103,45 +1112,205 @@ function CustomOrdersTab() {
 
 function ContentTab() {
   const [selectedSection, setSelectedSection] = useState('hero')
+  const [loading, setLoading] = useState(true)
   const [heroContent, setHeroContent] = useState({
-    title: 'Lumidumi',
-    subtitle: 'Handcrafted candles that illuminate your space with warmth and elegance.',
-    description: 'Each candle is lovingly made with premium wax and carefully selected fragrances.',
+    title: '',
+    subtitle: '',
+    description: '',
     imageUrl: '',
-    stats: [
-      { value: '100%', label: 'Natural Wax' },
-      { value: '50+', label: 'Unique Scents' },
-      { value: '24h', label: 'Burn Time' }
-    ]
+    stats: [] as Array<{ value: string; label: string }>
   })
 
   const [customOrderPricing, setCustomOrderPricing] = useState({
-    title: 'Custom Order Pricing',
-    startingPrices: [
-      { item: 'Small candles', price: '₹300 - ₹500 each' },
-      { item: 'Medium candles', price: '₹600 - ₹900 each' },
-      { item: 'Large candles', price: '₹1,000 - ₹1,500 each' },
-      { item: 'Bulk orders', price: 'Special pricing available' }
-    ],
-    additionalServices: [
-      { service: 'Custom packaging', price: '₹50 - ₹200 per piece' },
-      { service: 'Personalized labels', price: '₹25 per piece' },
-      { service: 'Rush orders (under 5 days)', price: '+50%' },
-      { service: 'Delivery within city', price: '₹200 - ₹500' }
-    ]
+    title: '',
+    startingPrices: [] as Array<{ item: string; price: string }>,
+    additionalServices: [] as Array<{ service: string; price: string }>
   })
 
   const [aboutContent, setAboutContent] = useState({
-    title: 'Crafted with Love',
-    subtitle: 'At Lumidumi, every candle tells a story.',
-    description: 'We believe in the power of handcrafted beauty and the warmth that comes from creating something special with your own hands.',
+    title: '',
+    subtitle: '',
+    description: '',
     imageUrl: '',
-    features: [
-      { icon: '🌿', title: 'Natural Ingredients', description: 'We use only premium natural wax and carefully sourced fragrances' },
-      { icon: '👐', title: 'Handmade Process', description: 'Each candle is individually crafted with attention to every detail' },
-      { icon: '🎨', title: 'Custom Designs', description: 'Personalized candles for your special moments and occasions' }
-    ]
+    features: [] as Array<{ icon: string; title: string; description: string }>
   })
+
+  const [contactContent, setContactContent] = useState({
+    title: '',
+    subtitle: '',
+    email: '',
+    phone: '',
+    address: '',
+    businessHours: '',
+    socialMedia: {
+      instagram: '',
+      facebook: '',
+      whatsapp: ''
+    }
+  })
+
+  const [footerContent, setFooterContent] = useState({
+    description: '',
+    quickLinks: [] as Array<{ name: string; url: string }>,
+    policies: [] as Array<{ name: string; url: string }>,
+    contact: {
+      email: '',
+      phone: '',
+      address: ''
+    },
+    socialMedia: {
+      instagram: '',
+      facebook: '',
+      whatsapp: ''
+    },
+    copyright: ''
+  })
+
+  // Load content data on component mount
+  useEffect(() => {
+    loadAllContent()
+  }, [])
+
+  const loadAllContent = async () => {
+    try {
+      setLoading(true)
+
+      // Load all content sections in parallel
+      const [heroRes, aboutRes, pricingRes, contactRes, footerRes] = await Promise.all([
+        fetch('/api/admin/content?section=hero'),
+        fetch('/api/admin/content?section=about'),
+        fetch('/api/admin/content?section=pricing'),
+        fetch('/api/admin/content?section=contact'),
+        fetch('/api/admin/content?section=footer')
+      ])
+
+      // Update hero content or set defaults
+      if (heroRes.ok) {
+        const { data } = await heroRes.json()
+        if (data && data.additional_data) {
+          setHeroContent(data.additional_data)
+        } else {
+          setHeroContent({
+            title: 'Lumidumi',
+            subtitle: 'Handcrafted candles that illuminate your space with warmth and elegance.',
+            description: 'Each candle is lovingly made with premium wax and carefully selected fragrances.',
+            imageUrl: '',
+            stats: [
+              { value: '100%', label: 'Natural Wax' },
+              { value: '50+', label: 'Unique Scents' },
+              { value: '24h', label: 'Burn Time' }
+            ]
+          })
+        }
+      }
+
+      // Update about content or set defaults
+      if (aboutRes.ok) {
+        const { data } = await aboutRes.json()
+        if (data && data.additional_data) {
+          setAboutContent(data.additional_data)
+        } else {
+          setAboutContent({
+            title: 'Crafted with Love',
+            subtitle: 'At Lumidumi, every candle tells a story.',
+            description: 'We believe in the power of handcrafted beauty and the warmth that comes from creating something special with your own hands.',
+            imageUrl: '',
+            features: [
+              { icon: '🌿', title: 'Natural Ingredients', description: 'We use only premium natural wax and carefully sourced fragrances' },
+              { icon: '👐', title: 'Handmade Process', description: 'Each candle is individually crafted with attention to every detail' },
+              { icon: '🎨', title: 'Custom Designs', description: 'Personalized candles for your special moments and occasions' }
+            ]
+          })
+        }
+      }
+
+      // Update pricing content or set defaults
+      if (pricingRes.ok) {
+        const { data } = await pricingRes.json()
+        if (data && data.additional_data) {
+          setCustomOrderPricing(data.additional_data)
+        } else {
+          setCustomOrderPricing({
+            title: 'Custom Order Pricing',
+            startingPrices: [
+              { item: 'Small candles', price: '₹300 - ₹500 each' },
+              { item: 'Medium candles', price: '₹600 - ₹900 each' },
+              { item: 'Large candles', price: '₹1,000 - ₹1,500 each' },
+              { item: 'Bulk orders', price: 'Special pricing available' }
+            ],
+            additionalServices: [
+              { service: 'Custom packaging', price: '₹50 - ₹200 per piece' },
+              { service: 'Personalized labels', price: '₹25 per piece' },
+              { service: 'Rush orders (under 5 days)', price: '+50%' },
+              { service: 'Delivery within city', price: '₹200 - ₹500' }
+            ]
+          })
+        }
+      }
+
+      // Update contact content or set defaults
+      if (contactRes.ok) {
+        const { data } = await contactRes.json()
+        if (data && data.additional_data) {
+          setContactContent(data.additional_data)
+        } else {
+          setContactContent({
+            title: 'Get in Touch',
+            subtitle: 'We\'d love to hear from you. Send us a message and we\'ll respond as soon as possible.',
+            email: 'team@lumidumi.com',
+            phone: '+91 98765 43210',
+            address: 'Mumbai, Maharashtra, India',
+            businessHours: 'Monday - Friday: 9:00 AM - 6:00 PM',
+            socialMedia: {
+              instagram: 'https://instagram.com/lumidumi',
+              facebook: 'https://facebook.com/lumidumi',
+              whatsapp: '+91 98765 43210'
+            }
+          })
+        }
+      }
+
+      // Update footer content or set defaults
+      if (footerRes.ok) {
+        const { data } = await footerRes.json()
+        if (data && data.additional_data) {
+          setFooterContent(data.additional_data)
+        } else {
+          setFooterContent({
+            description: 'Lumidumi creates handcrafted candles that illuminate your space with warmth and elegance. Each candle is lovingly made with premium wax and carefully selected fragrances.',
+            quickLinks: [
+              { name: 'About Us', url: '/about' },
+              { name: 'Products', url: '/products' },
+              { name: 'Custom Orders', url: '/custom-orders' },
+              { name: 'Contact', url: '/contact' }
+            ],
+            policies: [
+              { name: 'Privacy Policy', url: '/privacy-policy' },
+              { name: 'Terms of Service', url: '/terms-of-service' },
+              { name: 'Shipping Policy', url: '/shipping-policy' },
+              { name: 'Refund Policy', url: '/refund-policy' }
+            ],
+            contact: {
+              email: 'team@lumidumi.com',
+              phone: '+91 98765 43210',
+              address: 'Mumbai, Maharashtra, India'
+            },
+            socialMedia: {
+              instagram: 'https://instagram.com/lumidumi',
+              facebook: 'https://facebook.com/lumidumi',
+              whatsapp: '+91 98765 43210'
+            },
+            copyright: '© 2025 Lumidumi. All rights reserved.'
+          })
+        }
+      }
+
+    } catch (error) {
+      console.error('Error loading content:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSave = async (section: string) => {
     try {
@@ -1155,6 +1324,12 @@ function ContentTab() {
           break
         case 'pricing':
           contentData = customOrderPricing
+          break
+        case 'contact':
+          contentData = contactContent
+          break
+        case 'footer':
+          contentData = footerContent
           break
         default:
           throw new Error('Unknown section')
@@ -1188,14 +1363,23 @@ function ContentTab() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cream-300 mx-auto"></div>
+        <p className="mt-2 text-charcoal/60">Loading content...</p>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-charcoal">Content Management</h2>
-        <div className="flex space-x-2">
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-charcoal mb-4">Content Management</h2>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedSection('hero')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               selectedSection === 'hero'
                 ? 'bg-cream-300 text-white'
                 : 'bg-cream-100 text-charcoal hover:bg-cream-200'
@@ -1205,7 +1389,7 @@ function ContentTab() {
           </button>
           <button
             onClick={() => setSelectedSection('about')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               selectedSection === 'about'
                 ? 'bg-cream-300 text-white'
                 : 'bg-cream-100 text-charcoal hover:bg-cream-200'
@@ -1215,13 +1399,33 @@ function ContentTab() {
           </button>
           <button
             onClick={() => setSelectedSection('pricing')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
               selectedSection === 'pricing'
                 ? 'bg-cream-300 text-white'
                 : 'bg-cream-100 text-charcoal hover:bg-cream-200'
             }`}
           >
             Custom Orders Pricing
+          </button>
+          <button
+            onClick={() => setSelectedSection('contact')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              selectedSection === 'contact'
+                ? 'bg-cream-300 text-white'
+                : 'bg-cream-100 text-charcoal hover:bg-cream-200'
+            }`}
+          >
+            Contact Page
+          </button>
+          <button
+            onClick={() => setSelectedSection('footer')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              selectedSection === 'footer'
+                ? 'bg-cream-300 text-white'
+                : 'bg-cream-100 text-charcoal hover:bg-cream-200'
+            }`}
+          >
+            Footer
           </button>
         </div>
       </div>
@@ -1516,6 +1720,259 @@ function ContentTab() {
             className="btn-primary"
           >
             Save Pricing Content
+          </button>
+        </div>
+      )}
+
+      {selectedSection === 'contact' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Page Title
+              </label>
+              <input
+                type="text"
+                value={contactContent.title}
+                onChange={(e) => setContactContent({ ...contactContent, title: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={contactContent.email}
+                onChange={(e) => setContactContent({ ...contactContent, email: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Subtitle
+            </label>
+            <textarea
+              value={contactContent.subtitle}
+              onChange={(e) => setContactContent({ ...contactContent, subtitle: e.target.value })}
+              rows={2}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={contactContent.phone}
+                onChange={(e) => setContactContent({ ...contactContent, phone: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Address
+              </label>
+              <input
+                type="text"
+                value={contactContent.address}
+                onChange={(e) => setContactContent({ ...contactContent, address: e.target.value })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Business Hours
+            </label>
+            <input
+              type="text"
+              value={contactContent.businessHours}
+              onChange={(e) => setContactContent({ ...contactContent, businessHours: e.target.value })}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-4">
+              Social Media Links
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-charcoal/60 mb-1">Instagram</label>
+                <input
+                  type="url"
+                  value={contactContent.socialMedia.instagram}
+                  onChange={(e) => setContactContent({
+                    ...contactContent,
+                    socialMedia: { ...contactContent.socialMedia, instagram: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal/60 mb-1">Facebook</label>
+                <input
+                  type="url"
+                  value={contactContent.socialMedia.facebook}
+                  onChange={(e) => setContactContent({
+                    ...contactContent,
+                    socialMedia: { ...contactContent.socialMedia, facebook: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal/60 mb-1">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={contactContent.socialMedia.whatsapp}
+                  onChange={(e) => setContactContent({
+                    ...contactContent,
+                    socialMedia: { ...contactContent.socialMedia, whatsapp: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => handleSave('contact')}
+            className="btn-primary"
+          >
+            Save Contact Content
+          </button>
+        </div>
+      )}
+
+      {selectedSection === 'footer' && (
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Footer Description
+            </label>
+            <textarea
+              value={footerContent.description}
+              onChange={(e) => setFooterContent({ ...footerContent, description: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                value={footerContent.contact.email}
+                onChange={(e) => setFooterContent({
+                  ...footerContent,
+                  contact: { ...footerContent.contact, email: e.target.value }
+                })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Contact Phone
+              </label>
+              <input
+                type="tel"
+                value={footerContent.contact.phone}
+                onChange={(e) => setFooterContent({
+                  ...footerContent,
+                  contact: { ...footerContent.contact, phone: e.target.value }
+                })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">
+                Address
+              </label>
+              <input
+                type="text"
+                value={footerContent.contact.address}
+                onChange={(e) => setFooterContent({
+                  ...footerContent,
+                  contact: { ...footerContent.contact, address: e.target.value }
+                })}
+                className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-4">
+              Social Media Links
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-charcoal/60 mb-1">Instagram</label>
+                <input
+                  type="url"
+                  value={footerContent.socialMedia.instagram}
+                  onChange={(e) => setFooterContent({
+                    ...footerContent,
+                    socialMedia: { ...footerContent.socialMedia, instagram: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal/60 mb-1">Facebook</label>
+                <input
+                  type="url"
+                  value={footerContent.socialMedia.facebook}
+                  onChange={(e) => setFooterContent({
+                    ...footerContent,
+                    socialMedia: { ...footerContent.socialMedia, facebook: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-charcoal/60 mb-1">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={footerContent.socialMedia.whatsapp}
+                  onChange={(e) => setFooterContent({
+                    ...footerContent,
+                    socialMedia: { ...footerContent.socialMedia, whatsapp: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-charcoal mb-2">
+              Copyright Text
+            </label>
+            <input
+              type="text"
+              value={footerContent.copyright}
+              onChange={(e) => setFooterContent({ ...footerContent, copyright: e.target.value })}
+              className="w-full px-3 py-2 border border-cream-200 rounded-md focus:outline-none focus:ring-cream-300 focus:border-cream-300"
+            />
+          </div>
+
+          <button
+            onClick={() => handleSave('footer')}
+            className="btn-primary"
+          >
+            Save Footer Content
           </button>
         </div>
       )}

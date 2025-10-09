@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useState, Suspense, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Logo from '@/components/Logo'
 
 function ResetPasswordForm() {
@@ -11,8 +10,19 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [token, setToken] = useState('')
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token')
+    if (tokenFromUrl) {
+      setToken(tokenFromUrl)
+    } else {
+      setError('Invalid reset link. Please request a new password reset.')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,13 +42,25 @@ function ResetPasswordForm() {
       return
     }
 
+    if (!token) {
+      setError('Invalid reset link. Please request a new password reset.')
+      setLoading(false)
+      return
+    }
+
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
+      const response = await fetch('/api/auth/verify-reset-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, password }),
       })
 
-      if (error) {
-        setError(error.message || 'Failed to update password')
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to update password')
       } else {
         setSuccess('Password updated successfully! Redirecting to login...')
         setTimeout(() => {
