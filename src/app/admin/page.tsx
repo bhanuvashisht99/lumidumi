@@ -188,10 +188,12 @@ function ProductsTab() {
 
   const fetchProducts = async () => {
     try {
+      setLoading(true)
       const data = await getAllProducts()
       setProducts(data)
     } catch (error) {
       console.error('Error fetching products:', error)
+      alert('Error loading products. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -239,7 +241,10 @@ function ProductsTab() {
       }
 
       const { data } = await response.json()
-      setProducts([...products, data])
+
+      // Refresh the products list to get the latest data
+      await fetchProducts()
+
       setShowAddForm(false)
       setNewProduct({
         name: '',
@@ -254,6 +259,11 @@ function ProductsTab() {
         ingredients: '',
         care_instructions: ''
       })
+
+      // Force cache invalidation for frontend
+      if (typeof window !== 'undefined') {
+        window.postMessage({ type: 'PRODUCTS_UPDATED' }, '*')
+      }
     } catch (error) {
       console.error('Error adding product:', error)
       alert(`Error adding product: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -314,8 +324,16 @@ function ProductsTab() {
       }
 
       const { data } = await response.json()
-      setProducts(products.map(p => p.id === editingProduct.id ? data : p))
+
+      // Refresh the products list to get the latest data
+      await fetchProducts()
+
       setEditingProduct(null)
+
+      // Force cache invalidation for frontend
+      if (typeof window !== 'undefined') {
+        window.postMessage({ type: 'PRODUCTS_UPDATED' }, '*')
+      }
     } catch (error) {
       console.error('Error updating product:', error)
       alert(`Error updating product: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -338,7 +356,13 @@ function ProductsTab() {
         throw new Error('Failed to delete product')
       }
 
-      setProducts(products.filter(p => p.id !== productId))
+      // Refresh the products list to get the latest data
+      await fetchProducts()
+
+      // Force cache invalidation for frontend
+      if (typeof window !== 'undefined') {
+        window.postMessage({ type: 'PRODUCTS_UPDATED' }, '*')
+      }
     } catch (error) {
       console.error('Error deleting product:', error)
       alert('Error deleting product')
@@ -353,12 +377,21 @@ function ProductsTab() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-charcoal">Products</h2>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="btn-primary"
-        >
-          {showAddForm ? 'Cancel' : 'Add New Product'}
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={fetchProducts}
+            className="btn-secondary"
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : '🔄 Refresh'}
+          </button>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="btn-primary"
+          >
+            {showAddForm ? 'Cancel' : 'Add New Product'}
+          </button>
+        </div>
       </div>
 
       {showAddForm && (

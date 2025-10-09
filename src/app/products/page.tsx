@@ -4,20 +4,23 @@ import { useState, useEffect } from 'react'
 import { getProducts, Product } from '@/lib/database'
 import { useCart } from '@/contexts/CartContext'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        const allProducts = await getProducts()
-        setProducts(allProducts)
-      } catch (error) {
-        console.error('Error loading products:', error)
-        // Fallback to sample products
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      const allProducts = await getProducts()
+      setProducts(allProducts)
+    } catch (error) {
+      console.error('Error loading products:', error)
+      // Fallback to sample products
         setProducts([
           {
             id: '1',
@@ -98,12 +101,27 @@ export default function ProductsPage() {
             updated_at: new Date().toISOString()
           }
         ])
-      } finally {
-        setLoading(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+
+    // Listen for product updates from admin panel
+    const handleProductUpdate = (event: MessageEvent) => {
+      if (event.data.type === 'PRODUCTS_UPDATED') {
+        console.log('Received product update notification, refreshing products...')
+        loadProducts()
       }
     }
 
-    loadProducts()
+    window.addEventListener('message', handleProductUpdate)
+
+    return () => {
+      window.removeEventListener('message', handleProductUpdate)
+    }
   }, [])
 
   const categories = [

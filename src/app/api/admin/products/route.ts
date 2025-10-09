@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ data })
+    const response = NextResponse.json({ data })
+    response.headers.set('Cache-Control', 'no-store, max-age=0')
+    return response
   } catch (error) {
     console.error('Error creating product:', error)
     return NextResponse.json(
@@ -80,7 +82,9 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ data })
+    const response = NextResponse.json({ data })
+    response.headers.set('Cache-Control', 'no-store, max-age=0')
+    return response
   } catch (error) {
     console.error('Error updating product:', error)
     return NextResponse.json(
@@ -115,7 +119,9 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+    response.headers.set('Cache-Control', 'no-store, max-age=0')
+    return response
   } catch (error) {
     console.error('Error deleting product:', error)
     return NextResponse.json(

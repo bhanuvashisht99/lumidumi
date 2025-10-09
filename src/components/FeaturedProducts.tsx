@@ -9,19 +9,19 @@ export default function FeaturedProducts() {
   const [loading, setLoading] = useState(true)
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
-  useEffect(() => {
-    async function loadProducts() {
-      try {
-        // Check if we're in a browser environment with valid Supabase config
-        if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) {
-          const featuredProducts = await getProducts(true) // Get only featured products
-          setProducts(featuredProducts)
-        } else {
-          throw new Error('Supabase not configured or running on server')
-        }
-      } catch (error) {
-        console.error('Error loading products:', error)
-        // Fallback to hardcoded products if database fails
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      // Check if we're in a browser environment with valid Supabase config
+      if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        const featuredProducts = await getProducts(true) // Get only featured products
+        setProducts(featuredProducts)
+      } else {
+        throw new Error('Supabase not configured or running on server')
+      }
+    } catch (error) {
+      console.error('Error loading products:', error)
+      // Fallback to hardcoded products if database fails
         setProducts([
           {
             id: '1',
@@ -76,13 +76,33 @@ export default function FeaturedProducts() {
             updated_at: new Date().toISOString()
           }
         ])
-      } finally {
-        setLoading(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+
+    // Listen for product updates from admin panel
+    const handleProductUpdate = (event: MessageEvent) => {
+      if (event.data.type === 'PRODUCTS_UPDATED') {
+        console.log('Received product update notification, refreshing...')
+        loadProducts()
       }
     }
 
-    loadProducts()
+    window.addEventListener('message', handleProductUpdate)
+
+    return () => {
+      window.removeEventListener('message', handleProductUpdate)
+    }
   }, [])
+
+  // Add a manual refresh function
+  const refreshProducts = () => {
+    loadProducts()
+  }
 
   return (
     <section className="py-20 bg-white">
