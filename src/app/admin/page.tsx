@@ -166,6 +166,7 @@ function ProductsTab() {
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<any>(null)
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -256,6 +257,81 @@ function ProductsTab() {
     } catch (error) {
       console.error('Error adding product:', error)
       alert(`Error adding product: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct({
+      ...product,
+      price: product.price.toString(),
+      stock_quantity: product.stock_quantity.toString(),
+      weight: product.weight?.toString() || '',
+      burn_time: product.burn_time?.toString() || '',
+      category_id: product.category_id || '',
+      scent_description: product.scent_description || '',
+      ingredients: product.ingredients || '',
+      care_instructions: product.care_instructions || ''
+    })
+    setShowAddForm(false)
+  }
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProduct) return
+
+    try {
+      const productData = {
+        ...editingProduct,
+        price: parseFloat(editingProduct.price),
+        stock_quantity: parseInt(editingProduct.stock_quantity),
+        weight: editingProduct.weight ? parseFloat(editingProduct.weight) : null,
+        burn_time: editingProduct.burn_time ? parseInt(editingProduct.burn_time) : null,
+        category_id: editingProduct.category_id || null,
+        slug: editingProduct.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      }
+
+      const response = await fetch('/api/admin/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: editingProduct.id, ...productData }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update product')
+      }
+
+      const { data } = await response.json()
+      setProducts(products.map(p => p.id === editingProduct.id ? data : p))
+      setEditingProduct(null)
+    } catch (error) {
+      console.error('Error updating product:', error)
+      alert(`Error updating product: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return
+
+    try {
+      const response = await fetch('/api/admin/products', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: productId }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product')
+      }
+
+      setProducts(products.filter(p => p.id !== productId))
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('Error deleting product')
     }
   }
 
@@ -386,6 +462,123 @@ function ProductsTab() {
         </div>
       )}
 
+      {editingProduct && (
+        <div className="mb-6 p-6 bg-white rounded-lg shadow-sm border">
+          <h3 className="text-lg font-semibold text-charcoal mb-4">Edit Product: {editingProduct.name}</h3>
+          <form onSubmit={handleUpdateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Product Name *</label>
+              <input
+                type="text"
+                value={editingProduct.name}
+                onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Price (₹) *</label>
+              <input
+                type="number"
+                value={editingProduct.price}
+                onChange={(e) => setEditingProduct({...editingProduct, price: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                required
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">Description *</label>
+              <textarea
+                value={editingProduct.description}
+                onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Stock Quantity *</label>
+              <input
+                type="number"
+                value={editingProduct.stock_quantity}
+                onChange={(e) => setEditingProduct({...editingProduct, stock_quantity: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Category</label>
+              <select
+                value={editingProduct.category_id}
+                onChange={(e) => setEditingProduct({...editingProduct, category_id: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">Product Image</label>
+              <ImageUpload
+                currentImage={editingProduct.image_url}
+                onImageUploaded={(url) => setEditingProduct({...editingProduct, image_url: url})}
+                productName={editingProduct.name}
+              />
+              <div className="mt-3">
+                <input
+                  type="url"
+                  value={editingProduct.image_url}
+                  onChange={(e) => setEditingProduct({...editingProduct, image_url: e.target.value})}
+                  className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 text-sm"
+                  placeholder="Or paste image URL directly"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Weight (g)</label>
+              <input
+                type="number"
+                value={editingProduct.weight}
+                onChange={(e) => setEditingProduct({...editingProduct, weight: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-2">Burn Time (hours)</label>
+              <input
+                type="number"
+                value={editingProduct.burn_time}
+                onChange={(e) => setEditingProduct({...editingProduct, burn_time: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-charcoal mb-2">Scent Description</label>
+              <textarea
+                value={editingProduct.scent_description}
+                onChange={(e) => setEditingProduct({...editingProduct, scent_description: e.target.value})}
+                className="w-full px-3 py-2 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end md:col-span-2 space-x-3">
+              <button
+                type="button"
+                onClick={() => setEditingProduct(null)}
+                className="px-4 py-2 text-charcoal/60 hover:text-charcoal"
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">Update Product</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-cream-200">
           <thead>
@@ -444,8 +637,18 @@ function ProductsTab() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-cream-300 hover:text-cream-300/80 mr-4">Edit</button>
-                    <button className="text-red-600 hover:text-red-500">Delete</button>
+                    <button
+                      onClick={() => handleEditProduct(product)}
+                      className="text-cream-300 hover:text-cream-300/80 mr-4"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="text-red-600 hover:text-red-500"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))
