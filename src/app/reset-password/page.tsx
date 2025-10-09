@@ -1,28 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import Logo from '@/components/Logo'
 
-export default function RegisterPage() {
-  const [email, setEmail] = useState('')
+function ResetPasswordForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const { signUp, user } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (user) {
-      router.push('/')
-    }
-  }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,25 +33,17 @@ export default function RegisterPage() {
     }
 
     try {
-      const { error } = await signUp(email, password, fullName)
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      })
 
       if (error) {
-        // Handle specific error cases
-        if (error.message?.includes('User already registered')) {
-          setError('An account with this email already exists. Try signing in instead or use the "Forgot Password" link if you need to reset your password.')
-        } else if (error.message?.includes('Email rate limit exceeded')) {
-          setError('Too many emails sent. Please wait a few minutes before trying again.')
-        } else {
-          setError(error.message || 'Failed to create account')
-        }
+        setError(error.message || 'Failed to update password')
       } else {
-        // Show success message
-        setSuccess('Account created successfully! Please check your email (including spam folder) for a verification link before signing in.')
-        // Clear form
-        setEmail('')
-        setPassword('')
-        setConfirmPassword('')
-        setFullName('')
+        setSuccess('Password updated successfully! Redirecting to login...')
+        setTimeout(() => {
+          router.push('/login')
+        }, 2000)
       }
     } catch (err) {
       setError('An unexpected error occurred')
@@ -70,27 +52,16 @@ export default function RegisterPage() {
     }
   }
 
-  if (user) {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
-          <p className="mt-4 text-charcoal">Redirecting...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-cream-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Logo width={80} height={80} showText={false} className="mx-auto" />
           <h2 className="mt-6 text-3xl font-bold text-charcoal">
-            Create your account
+            Set new password
           </h2>
           <p className="mt-2 text-sm text-charcoal/60">
-            Join Lumidumi and discover handcrafted candles
+            Enter your new password below
           </p>
         </div>
 
@@ -104,50 +75,13 @@ export default function RegisterPage() {
           {success && (
             <div className="bg-green-50 border border-green-200 rounded-md p-4">
               <p className="text-green-800 text-sm">{success}</p>
-              <p className="text-green-700 text-xs mt-2">
-                After verifying your email, you can <a href="/login" className="underline font-medium">sign in here</a>.
-                If you don't receive the email, check your spam folder.
-              </p>
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-charcoal">
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-cream-200 rounded-md shadow-sm focus:outline-none focus:ring-cream-300 focus:border-cream-300"
-                placeholder="Enter your full name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-charcoal">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-cream-200 rounded-md shadow-sm focus:outline-none focus:ring-cream-300 focus:border-cream-300"
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div>
               <label htmlFor="password" className="block text-sm font-medium text-charcoal">
-                Password
+                New Password
               </label>
               <input
                 id="password"
@@ -158,13 +92,13 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-cream-200 rounded-md shadow-sm focus:outline-none focus:ring-cream-300 focus:border-cream-300"
-                placeholder="Create a password (min 6 characters)"
+                placeholder="Enter new password (min 6 characters)"
               />
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-charcoal">
-                Confirm Password
+                Confirm New Password
               </label>
               <input
                 id="confirmPassword"
@@ -175,7 +109,7 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-cream-200 rounded-md shadow-sm focus:outline-none focus:ring-cream-300 focus:border-cream-300"
-                placeholder="Confirm your password"
+                placeholder="Confirm new password"
               />
             </div>
           </div>
@@ -189,33 +123,36 @@ export default function RegisterPage() {
               {loading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                'Create account'
+                'Update password'
               )}
             </button>
           </div>
 
           <div className="text-center">
-            <p className="text-sm text-charcoal/60">
-              Already have an account?{' '}
-              <a
-                href="/login"
-                className="text-cream-300 hover:text-cream-300/80 font-medium"
-              >
-                Sign in
-              </a>
-            </p>
-          </div>
-
-          <div className="text-center">
             <a
-              href="/"
+              href="/login"
               className="text-sm text-cream-300 hover:text-cream-300/80"
             >
-              Back to home
+              Back to sign in
             </a>
           </div>
         </form>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
+          <p className="mt-4 text-charcoal">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
