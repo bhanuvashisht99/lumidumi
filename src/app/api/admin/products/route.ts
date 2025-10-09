@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest) {
       .from('products')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('*')
       .single()
 
     if (error) {

@@ -280,14 +280,24 @@ function ProductsTab() {
     if (!editingProduct) return
 
     try {
+      // Extract only the database fields, excluding joined data like 'category'
+      const { category, created_at, updated_at, id, ...cleanProduct } = editingProduct
+
       const productData = {
-        ...editingProduct,
-        price: parseFloat(editingProduct.price),
-        stock_quantity: parseInt(editingProduct.stock_quantity),
-        weight: editingProduct.weight ? parseFloat(editingProduct.weight) : null,
-        burn_time: editingProduct.burn_time ? parseInt(editingProduct.burn_time) : null,
-        category_id: editingProduct.category_id || null,
-        slug: editingProduct.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+        name: cleanProduct.name,
+        description: cleanProduct.description,
+        price: parseFloat(cleanProduct.price),
+        stock_quantity: parseInt(cleanProduct.stock_quantity),
+        weight: cleanProduct.weight ? parseFloat(cleanProduct.weight) : null,
+        burn_time: cleanProduct.burn_time ? parseInt(cleanProduct.burn_time) : null,
+        category_id: cleanProduct.category_id || null,
+        image_url: cleanProduct.image_url || null,
+        scent_description: cleanProduct.scent_description || null,
+        ingredients: cleanProduct.ingredients || null,
+        care_instructions: cleanProduct.care_instructions || null,
+        slug: cleanProduct.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
+        is_active: cleanProduct.is_active,
+        featured: cleanProduct.featured
       }
 
       const response = await fetch('/api/admin/products', {
