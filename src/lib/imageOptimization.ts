@@ -13,8 +13,33 @@ export interface ImageUploadOptions {
   thumbnailSize?: number
 }
 
+// Convert HEIC file to JPEG
+async function convertHeicToJpeg(file: File): Promise<File> {
+  try {
+    // Dynamic import to avoid SSR issues
+    const { default: heic2any } = await import('heic2any')
+
+    const conversionResult = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.8
+    })
+
+    // heic2any returns either a Blob or Blob[]
+    const resultBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult
+
+    return new File([resultBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+      type: 'image/jpeg',
+      lastModified: Date.now()
+    })
+  } catch (error) {
+    console.error('HEIC conversion failed:', error)
+    throw new Error('Failed to convert HEIC image. Please try a different format.')
+  }
+}
+
 // Compress and optimize images client-side before upload
-export function optimizeImageFile(
+export async function optimizeImageFile(
   file: File,
   options: ImageUploadOptions = {}
 ): Promise<{ optimized: File; thumbnail: File }> {
@@ -24,6 +49,19 @@ export function optimizeImageFile(
     maxHeight = 1200,
     thumbnailSize = 300
   } = options
+
+  // Check if file is HEIC and convert to JPEG first
+  let processFile = file
+  const fileName = file.name.toLowerCase()
+  const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif'
+
+  if (isHeicFile) {
+    try {
+      processFile = await convertHeicToJpeg(file)
+    } catch (error) {
+      throw new Error(`HEIC conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
 
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas')
@@ -58,12 +96,13 @@ export function optimizeImageFile(
               return
             }
 
-            const optimizedFile = new File([optimizedBlob], `optimized_${file.name}`, {
+            const optimizedFileName = processFile.name.replace(/\.(heic|heif)$/i, '.jpg')
+            const optimizedFile = new File([optimizedBlob], `optimized_${optimizedFileName}`, {
               type: 'image/jpeg',
               lastModified: Date.now()
             })
 
-            const thumbnailFile = new File([thumbnailBlob], `thumb_${file.name}`, {
+            const thumbnailFile = new File([thumbnailBlob], `thumb_${optimizedFileName}`, {
               type: 'image/jpeg',
               lastModified: Date.now()
             })
@@ -77,7 +116,7 @@ export function optimizeImageFile(
     }
 
     img.onerror = () => reject(new Error('Failed to load image'))
-    img.src = URL.createObjectURL(file)
+    img.src = URL.createObjectURL(processFile)
   })
 }
 
@@ -106,12 +145,16 @@ function calculateDimensions(
 // Validate image file before upload
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
   const maxSize = 10 * 1024 * 1024 // 10MB
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
-  if (!allowedTypes.includes(file.type)) {
+  // Check by file extension for HEIC files (sometimes MIME type is not set correctly)
+  const fileName = file.name.toLowerCase()
+  const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif')
+
+  if (!allowedTypes.includes(file.type) && !isHeicFile) {
     return {
       valid: false,
-      error: 'Only JPEG, PNG, and WebP images are allowed'
+      error: 'Only JPEG, PNG, WebP, and HEIC images are allowed'
     }
   }
 

@@ -307,7 +307,7 @@ export default function MultiImageUpload({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         onChange={(e) => {
           if (e.target.files) {
             handleFileSelect(e.target.files)
@@ -322,7 +322,8 @@ export default function MultiImageUpload({
         <ul className="space-y-1">
           <li>• Images are automatically compressed to optimal size</li>
           <li>• Maximum size: 10MB per image</li>
-          <li>• Supported formats: JPEG, PNG, WebP</li>
+          <li>• Supported formats: JPEG, PNG, WebP, HEIC</li>
+          <li>• HEIC files are automatically converted to JPEG</li>
           <li>• First image becomes the primary product image</li>
           <li>• Single images can be cropped before upload</li>
         </ul>
