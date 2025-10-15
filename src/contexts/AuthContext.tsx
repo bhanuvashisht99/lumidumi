@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { User, Session } from '@supabase/supabase-js'
+import { useAuthPersistence } from '@/hooks/useAuthPersistence'
 
 interface AuthContextType {
   user: User | null
@@ -22,54 +23,121 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const { saveAuthState, restoreAuthState, clearAuthState } = useAuthPersistence()
 
   useEffect(() => {
-    // Get initial session
-    supabase?.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      checkAdminStatus(session?.user ?? null)
-      setLoading(false)
-    })
+    let mounted = true
+
+    // Get initial session with better error handling
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase?.auth.getSession()
+
+        if (!mounted) return
+
+        if (error) {
+          console.error('Error getting session:', error)
+        }
+
+        setSession(session)
+        setUser(session?.user ?? null)
+        await checkAdminStatus(session?.user ?? null)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        setLoading(false)
+      }
+    }
+
+    initializeAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase?.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return
+
+        console.log('Auth event:', event, 'Session:', !!session)
+
         setSession(session)
         setUser(session?.user ?? null)
 
         // Create profile if user just signed in and profile doesn't exist
         if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', session.user.id)
-            .single()
-
-          if (!existingProfile) {
-            // Create profile if it doesn't exist
-            const fullName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
-            const [firstName, ...lastNameParts] = fullName.split(' ')
-            const lastName = lastNameParts.join(' ')
-
-            await supabase
+          try {
+            const { data: existingProfile } = await supabase
               .from('profiles')
-              .insert({
-                id: session.user.id,
-                email: session.user.email,
-                first_name: firstName || 'User',
-                last_name: lastName || '',
-                role: 'customer'
-              })
+              .select('id')
+              .eq('id', session.user.id)
+              .single()
+
+            if (!existingProfile) {
+              // Create profile if it doesn't exist
+              const fullName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
+              const [firstName, ...lastNameParts] = fullName.split(' ')
+              const lastName = lastNameParts.join(' ')
+
+              await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  first_name: firstName || 'User',
+                  last_name: lastName || '',
+                  role: 'customer'
+                })
+            }
+          } catch (error) {
+            console.error('Error creating profile:', error)
           }
         }
 
-        checkAdminStatus(session?.user ?? null)
+        await checkAdminStatus(session?.user ?? null)
         setLoading(false)
       }
     ) ?? { data: { subscription: null } }
 
-    return () => subscription?.unsubscribe()
+    // Handle visibility change (tab switching) to refresh session
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && mounted) {
+        try {
+          const { data: { session } } = await supabase?.auth.getSession()
+          if (session && (!user || user.id !== session.user.id)) {
+            setSession(session)
+            setUser(session.user)
+            await checkAdminStatus(session.user)
+          }
+        } catch (error) {
+          console.error('Error refreshing session on visibility change:', error)
+        }
+      }
+    }
+
+    // Handle focus event (mobile app returning from background)
+    const handleFocus = async () => {
+      if (mounted) {
+        try {
+          const { data: { session } } = await supabase?.auth.getSession()
+          if (session && (!user || user.id !== session.user.id)) {
+            setSession(session)
+            setUser(session.user)
+            await checkAdminStatus(session.user)
+          }
+        } catch (error) {
+          console.error('Error refreshing session on focus:', error)
+        }
+      }
+    }
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [])
 
   const checkAdminStatus = async (user: User | null) => {
@@ -153,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return
 
     await supabase.auth.signOut()
+    clearAuthState() // Clear persistent auth data
     setIsAdmin(false)
   }
 
