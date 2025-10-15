@@ -99,10 +99,7 @@ export async function getProducts(featured?: boolean) {
 
     let query = supabase
       .from('products')
-      .select(`
-        *,
-        category:categories(*)
-      `)
+      .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
 
@@ -127,10 +124,7 @@ export async function getProducts(featured?: boolean) {
 export async function getProduct(id: string) {
   const { data, error } = await supabase
     .from('products')
-    .select(`
-      *,
-      category:categories(*)
-    `)
+    .select('*')
     .eq('id', id)
     .eq('is_active', true)
     .single()
@@ -144,18 +138,29 @@ export async function getProduct(id: string) {
 }
 
 export async function getProductBySlug(slug: string) {
-  const { data, error } = await supabase
+  // First try to find by slug
+  let { data, error } = await supabase
     .from('products')
-    .select(`
-      *,
-      category:categories(*)
-    `)
+    .select('*')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
+  // If not found and slug looks like a UUID, try to find by ID
+  if (error && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)) {
+    const result = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', slug)
+      .eq('is_active', true)
+      .single()
+
+    data = result.data
+    error = result.error
+  }
+
   if (error) {
-    console.error('Error fetching product by slug:', error)
+    console.error('Error fetching product by slug/id:', error)
     return null
   }
 
@@ -366,20 +371,37 @@ export async function updateProfile(userId: string, profileData: Partial<Profile
 
 // Admin functions
 export async function getAllProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      category:categories(*)
-    `)
-    .order('created_at', { ascending: false })
+  try {
+    // First try with category join
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        categories!category_id(*)
+      `)
+      .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error fetching all products:', error)
+    if (error) {
+      console.error('Error with category join, trying without:', error)
+      // Fallback: fetch without category join
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (productsError) {
+        console.error('Error fetching products:', productsError)
+        return []
+      }
+
+      return productsData || []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error in getAllProducts:', error)
     return []
   }
-
-  return data || []
 }
 
 export async function createProduct(productData: Partial<Product>) {

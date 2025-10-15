@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getAllProducts, getAllOrders, getCategories, getCustomOrders } from '@/lib/database'
 import ImageUpload from '@/components/ImageUpload'
+import ModernProductsTab from '@/components/admin/ModernProductsTab'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
@@ -158,8 +159,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tab Content */}
-        <div className="card">
-          {activeTab === 'products' && <ProductsTab />}
+        <div className={activeTab === 'products' ? '' : 'card'}>
+          {activeTab === 'products' && <ModernProductsTab />}
           {activeTab === 'orders' && <OrdersTab />}
           {activeTab === 'customers' && <CustomersTab />}
           {activeTab === 'custom' && <CustomOrdersTab />}

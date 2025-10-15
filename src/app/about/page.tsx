@@ -99,6 +99,33 @@ export default function AboutPage() {
           </div>
         </div>
 
+        {/* Business Information */}
+        <div className="bg-white border border-cream-200 rounded-2xl p-8 mb-16">
+          <h2 className="text-3xl font-bold text-charcoal text-center mb-8">Business Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-xl font-semibold text-charcoal mb-4">Company Details</h3>
+              <div className="space-y-3 text-charcoal/70">
+                <p><strong>Business Name:</strong> Lumidumi Handcrafted Candles</p>
+                <p><strong>Founded:</strong> 2024</p>
+                <p><strong>Specialization:</strong> Premium Handmade Candles</p>
+                <p><strong>Location:</strong> India</p>
+                <p><strong>Business Type:</strong> E-commerce / Artisan Crafts</p>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-charcoal mb-4">Our Commitment</h3>
+              <div className="space-y-3 text-charcoal/70">
+                <p><strong>Quality Assurance:</strong> Every candle tested for quality</p>
+                <p><strong>Customer Service:</strong> 24/7 support available</p>
+                <p><strong>Shipping:</strong> Secure packaging, timely delivery</p>
+                <p><strong>Returns:</strong> 30-day return policy</p>
+                <p><strong>Sustainability:</strong> Eco-friendly materials</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* CTA Section */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-charcoal mb-4">Ready to Experience Lumidumi?</h2>
