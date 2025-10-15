@@ -4,7 +4,7 @@ import { lazy, Suspense, useState, useCallback } from 'react'
 import AdminErrorBoundary from './AdminErrorBoundary'
 
 // Lazy load heavy admin components
-const ModernProductsTab = lazy(() => import('./ModernProductsTab').then(module => ({ default: module.default })))
+const ModernProductsTab = lazy(() => import('./ModernProductsTab'))
 const OrdersTab = lazy(() => import('./OrdersTab'))
 const CustomersTab = lazy(() => import('./CustomersTab'))
 const CustomOrdersTab = lazy(() => import('./CustomOrdersTab'))
