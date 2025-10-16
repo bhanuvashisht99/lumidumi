@@ -1,92 +1,54 @@
-// Client-side HEIC conversion utility
-// This approach converts HEIC files to JPEG using canvas-based fallback
+// Client-side HEIC conversion utility using heic2any library
+import heic2any from 'heic2any'
 
 export async function convertHeicToJpeg(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    // Check if the file is HEIC/HEIF
-    const fileName = file.name.toLowerCase()
-    const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif') ||
-                      file.type === 'image/heic' || file.type === 'image/heif'
+  // Check if the file is HEIC/HEIF
+  const fileName = file.name.toLowerCase()
+  const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif') ||
+                    file.type === 'image/heic' || file.type === 'image/heif'
 
-    if (!isHeicFile) {
-      // If not HEIC, return original file
-      resolve(file)
-      return
-    }
+  if (!isHeicFile) {
+    // If not HEIC, return original file
+    return file
+  }
 
-    console.log('Converting HEIC file:', fileName)
+  console.log('Converting HEIC file:', fileName)
 
-    // Create a FileReader to read the HEIC file
-    const reader = new FileReader()
+  try {
+    // Convert HEIC to JPEG using heic2any
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.9
+    })
 
-    reader.onload = async function(e) {
-      try {
-        const arrayBuffer = e.target?.result as ArrayBuffer
-        if (!arrayBuffer) {
-          throw new Error('Failed to read file data')
-        }
+    // heic2any returns Blob | Blob[], but we expect single blob for single file
+    const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob
 
-        // Create an image element to test if browser can handle HEIC
-        const img = new Image()
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-
-        if (!ctx) {
-          throw new Error('Canvas context not available')
-        }
-
-        img.onload = function() {
-          console.log('HEIC image loaded successfully in browser, converting to JPEG')
-
-          // Set canvas dimensions to image dimensions
-          canvas.width = img.naturalWidth
-          canvas.height = img.naturalHeight
-
-          // Draw the image on canvas
-          ctx.drawImage(img, 0, 0)
-
-          // Convert to JPEG blob
-          canvas.toBlob(function(blob) {
-            if (blob) {
-              // Create a new File object with JPEG type
-              const convertedFile = new File(
-                [blob],
-                fileName.replace(/\.(heic|heif)$/i, '.jpg'),
-                { type: 'image/jpeg' }
-              )
-              console.log('HEIC conversion successful')
-              resolve(convertedFile)
-            } else {
-              reject(new Error('Failed to convert HEIC to JPEG'))
-            }
-          }, 'image/jpeg', 0.9)
-        }
-
-        img.onerror = function() {
-          // If browser can't display HEIC, provide user-friendly error
-          reject(new Error('HEIC format is not supported by your browser. Please convert your image to JPEG or PNG format and try again.'))
-        }
-
-        // Try to load as blob URL first
-        const blob = new Blob([arrayBuffer], { type: file.type })
-        const url = URL.createObjectURL(blob)
-        img.src = url
-
-        // Clean up the URL after a delay
-        setTimeout(() => URL.revokeObjectURL(url), 10000)
-
-      } catch (error) {
-        console.error('Error in HEIC conversion:', error)
-        reject(new Error('Failed to process HEIC file. Please convert to JPEG or PNG format.'))
+    // Create a new File object with JPEG type
+    const convertedFileName = fileName.replace(/\.(heic|heif)$/i, '.jpg')
+    const convertedFile = new File(
+      [resultBlob],
+      convertedFileName,
+      {
+        type: 'image/jpeg',
+        lastModified: file.lastModified
       }
-    }
+    )
 
-    reader.onerror = function() {
-      reject(new Error('Failed to read HEIC file'))
-    }
+    console.log('HEIC conversion successful:', {
+      originalName: fileName,
+      convertedName: convertedFileName,
+      originalSize: file.size,
+      convertedSize: convertedFile.size
+    })
 
-    reader.readAsArrayBuffer(file)
-  })
+    return convertedFile
+
+  } catch (error) {
+    console.error('Error converting HEIC file:', error)
+    throw new Error('Failed to convert HEIC file. Please try converting to JPEG manually or use a different image.')
+  }
 }
 
 export function isHeicFile(file: File): boolean {
