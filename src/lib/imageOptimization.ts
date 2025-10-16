@@ -13,30 +13,6 @@ export interface ImageUploadOptions {
   thumbnailSize?: number
 }
 
-// Convert HEIC file to JPEG
-async function convertHeicToJpeg(file: File): Promise<File> {
-  try {
-    // Dynamic import to avoid SSR issues
-    const { default: heic2any } = await import('heic2any')
-
-    const conversionResult = await heic2any({
-      blob: file,
-      toType: 'image/jpeg',
-      quality: 0.8
-    })
-
-    // heic2any returns either a Blob or Blob[]
-    const resultBlob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult
-
-    return new File([resultBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
-      type: 'image/jpeg',
-      lastModified: Date.now()
-    })
-  } catch (error) {
-    console.error('HEIC conversion failed:', error)
-    throw new Error('Failed to convert HEIC image. Please try a different format.')
-  }
-}
 
 // Compress and optimize images client-side before upload
 export async function optimizeImageFile(
@@ -50,18 +26,8 @@ export async function optimizeImageFile(
     thumbnailSize = 300
   } = options
 
-  // Check if file is HEIC and convert to JPEG first
-  let processFile = file
-  const fileName = file.name.toLowerCase()
-  const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif'
-
-  if (isHeicFile) {
-    try {
-      processFile = await convertHeicToJpeg(file)
-    } catch (error) {
-      throw new Error(`HEIC conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }
+  // Process the file directly (HEIC support removed for now)
+  const processFile = file
 
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas')
@@ -144,27 +110,44 @@ function calculateDimensions(
 
 // Validate image file before upload
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
+  console.log('Validating file:', {
+    name: file.name,
+    type: file.type,
+    size: file.size
+  })
+
   const maxSize = 10 * 1024 * 1024 // 10MB
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
-  // Check by file extension for HEIC files (sometimes MIME type is not set correctly)
+  console.log('File validation details:', {
+    fileName: file.name.toLowerCase(),
+    fileType: file.type,
+    allowedTypes,
+    typeIncluded: allowedTypes.includes(file.type)
+  })
+
+  // Check both MIME type and file extension for HEIC files
   const fileName = file.name.toLowerCase()
   const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif')
+  const isValidType = allowedTypes.includes(file.type) || isHeicFile
 
-  if (!allowedTypes.includes(file.type) && !isHeicFile) {
+  if (!isValidType) {
+    console.log('File type validation failed')
     return {
       valid: false,
-      error: 'Only JPEG, PNG, WebP, and HEIC images are allowed'
+      error: `Only JPEG, PNG, WebP, and HEIC images are allowed. Received: ${file.type}`
     }
   }
 
   if (file.size > maxSize) {
+    console.log('File size validation failed')
     return {
       valid: false,
       error: 'Image size must be less than 10MB'
     }
   }
 
+  console.log('File validation passed')
   return { valid: true }
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { validateImageFile, optimizeImageFile } from '@/lib/imageOptimization'
+import { processImageFile } from '@/lib/heicConverter'
 import ImageCropper from './ImageCropper'
 
 interface ProductImage {
@@ -44,16 +45,104 @@ export default function MultiImageUpload({
     // For single file selection, show cropper
     if (fileArray.length === 1) {
       const file = fileArray[0]
-      const validation = validateImageFile(file)
 
-      if (!validation.valid) {
-        alert(`Error with ${file.name}: ${validation.error}`)
+      console.log('Single file selected for cropping:', file)
+
+      try {
+        // Process HEIC files first (converts to JPEG if needed)
+        const processedFile = await processImageFile(file)
+        console.log('File processed successfully:', processedFile.name, processedFile.type)
+
+        const validation = validateImageFile(processedFile)
+        console.log('Validation result:', validation)
+
+        if (!validation.valid) {
+          alert(`Error with ${processedFile.name}: ${validation.error}`)
+          return
+        }
+
+        // Use the processed file for further operations
+        const finalFile = processedFile
+
+        console.log('Creating blob URL for processed file:', {
+          name: finalFile.name,
+          type: finalFile.type,
+          size: finalFile.size,
+          lastModified: finalFile.lastModified
+        })
+
+        // Additional file validation
+        if (finalFile.size === 0) {
+          alert('The selected file appears to be empty. Please choose a different image.')
+          return
+        }
+
+        if (finalFile.size > 50 * 1024 * 1024) { // 50MB limit
+          alert('File is too large. Please choose an image smaller than 50MB.')
+          return
+        }
+
+        // Clean up any existing blob URL
+        if (cropperImage && cropperImage.startsWith('blob:')) {
+          URL.revokeObjectURL(cropperImage)
+        }
+
+        const blobUrl = URL.createObjectURL(finalFile)
+        console.log('Created blob URL:', blobUrl)
+
+        // Test if the blob URL is valid by creating a test image
+        const testImg = new Image()
+        testImg.onload = () => {
+          console.log('Blob URL test successful')
+          setCropperFile(finalFile)
+          setCropperImage(blobUrl)
+        }
+        testImg.onerror = (e) => {
+          console.error('Blob URL test failed, trying FileReader:', e)
+          URL.revokeObjectURL(blobUrl)
+
+          // Fallback to FileReader data URL
+          const reader = new FileReader()
+          reader.onload = (event) => {
+            const dataUrl = event.target?.result as string
+            if (dataUrl) {
+              console.log('FileReader data URL created successfully, length:', dataUrl.length)
+
+              // Test the data URL before using it
+              const testDataImg = new Image()
+              testDataImg.onload = () => {
+                console.log('Data URL test successful')
+                setCropperFile(finalFile)
+                setCropperImage(dataUrl)
+              }
+              testDataImg.onerror = (e) => {
+                console.error('Data URL test failed:', e)
+                // Last resort: try to use the data URL anyway, maybe the cropper can handle it
+                console.log('Attempting to use data URL despite test failure...')
+                setCropperFile(finalFile)
+                setCropperImage(dataUrl)
+              }
+              testDataImg.src = dataUrl
+            } else {
+              console.error('FileReader result is empty')
+              alert('Failed to create image preview. Please try a different image.')
+            }
+          }
+          reader.onerror = (e) => {
+            console.error('FileReader failed:', e)
+            alert('Failed to read image file. Please try a different image.')
+          }
+          reader.readAsDataURL(finalFile)
+        }
+        testImg.src = blobUrl
+
+        return
+
+      } catch (error) {
+        console.error('Error processing image file:', error)
+        alert(error instanceof Error ? error.message : 'Failed to process image file')
         return
       }
-
-      setCropperFile(file)
-      setCropperImage(URL.createObjectURL(file))
-      return
     }
 
     // For multiple files, process without cropping
@@ -189,19 +278,25 @@ export default function MultiImageUpload({
       // Process the cropped file
       await processFiles([croppedFile])
 
-      // Clean up cropper state
+      // Clean up cropper state and revoke blob URL (only if it's a blob URL)
+      if (cropperImage && cropperImage.startsWith('blob:')) {
+        URL.revokeObjectURL(cropperImage)
+      }
       setCropperImage(null)
       setCropperFile(null)
     } catch (error) {
       console.error('Error processing cropped image:', error)
       alert('Failed to process cropped image')
     }
-  }, [cropperFile, processFiles])
+  }, [cropperFile, processFiles, cropperImage])
 
   const handleCropCancel = useCallback(() => {
+    if (cropperImage && cropperImage.startsWith('blob:')) {
+      URL.revokeObjectURL(cropperImage)
+    }
     setCropperImage(null)
     setCropperFile(null)
-  }, [])
+  }, [cropperImage])
 
   return (
     <div className="space-y-4">
@@ -307,7 +402,7 @@ export default function MultiImageUpload({
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.heic,.heif"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
         onChange={(e) => {
           if (e.target.files) {
             handleFileSelect(e.target.files)
