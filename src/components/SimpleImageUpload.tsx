@@ -18,10 +18,12 @@ export default function SimpleImageUpload({
 }: SimpleImageUploadProps) {
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
     setError(null)
+    setProcessing(false)
 
     // Basic validation
     if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
@@ -35,6 +37,12 @@ export default function SimpleImageUpload({
     }
 
     try {
+      // Show processing state for HEIC files
+      const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+      if (isHeic) {
+        setProcessing(true)
+      }
+
       // Process the file (handles HEIC conversion if needed)
       console.log('Processing file:', file.name, file.type)
       const processedFile = await processImageFile(file)
@@ -55,6 +63,8 @@ export default function SimpleImageUpload({
       } else {
         setError(error instanceof Error ? error.message : 'Failed to process image')
       }
+    } finally {
+      setProcessing(false)
     }
   }
 
@@ -90,7 +100,9 @@ export default function SimpleImageUpload({
       {/* Upload Area */}
       <div
         className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-          dragOver
+          processing
+            ? 'border-blue-400 bg-blue-50'
+            : dragOver
             ? 'border-blue-400 bg-blue-50'
             : error
             ? 'border-red-300 bg-red-50'
@@ -99,18 +111,34 @@ export default function SimpleImageUpload({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !processing && fileInputRef.current?.click()}
       >
         <div className="space-y-4">
-          <div className="text-4xl">📷</div>
-          <div>
-            <p className="text-lg font-medium text-gray-700">
-              Drop your image here or click to browse
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Supports JPEG, PNG, WebP, HEIC (max {maxSize}MB)
-            </p>
-          </div>
+          {processing ? (
+            <>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <div>
+                <p className="text-lg font-medium text-blue-700">
+                  Converting HEIC image...
+                </p>
+                <p className="text-sm text-blue-600 mt-2">
+                  This may take a moment for iPhone photos
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-4xl">📷</div>
+              <div>
+                <p className="text-lg font-medium text-gray-700">
+                  Drop your image here or click to browse
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Supports JPEG, PNG, WebP, HEIC (max {maxSize}MB)
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <input
@@ -119,6 +147,7 @@ export default function SimpleImageUpload({
           accept={accept}
           onChange={handleFileSelect}
           className="hidden"
+          disabled={processing}
         />
       </div>
 

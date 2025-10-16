@@ -20,6 +20,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9.36.0",
     "eslint-config-next": "^15.5.4",
+    "libheif-js": "^1.19.8",
     "next": "^15.5.4",
     "nodemailer": "^7.0.9",
     "postcss": "^8.5.6",
