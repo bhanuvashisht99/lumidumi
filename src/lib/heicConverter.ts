@@ -59,25 +59,3 @@ export function isHeicFile(file: File): boolean {
   return isHeic
 }
 
-export async function processImageFile(file: File): Promise<File> {
-  console.log('processImageFile called with:', {
-    name: file.name,
-    type: file.type,
-    size: file.size
-  })
-
-  try {
-    // If it's a HEIC file, try to convert it
-    if (isHeicFile(file)) {
-      console.log('File detected as HEIC, attempting conversion:', file.name)
-      return await convertHeicToJpeg(file)
-    }
-
-    // For other image types, return as-is
-    console.log('File is not HEIC, returning as-is:', file.name)
-    return file
-  } catch (error) {
-    console.error('Error processing image file:', error)
-    throw error
-  }
-}
