@@ -1,7 +1,20 @@
-// Client-side HEIC conversion utility using heic2any library
-import heic2any from 'heic2any'
+// Client-side HEIC handling utility
+// Provides user-friendly guidance for HEIC files
 
-export async function convertHeicToJpeg(file: File): Promise<File> {
+export class HeicConversionError extends Error {
+  constructor(message: string, public isHeicFile: boolean = true) {
+    super(message)
+    this.name = 'HeicConversionError'
+  }
+}
+
+export async function processImageFile(file: File): Promise<File> {
+  console.log('Processing image file:', {
+    name: file.name,
+    type: file.type,
+    size: file.size
+  })
+
   // Check if the file is HEIC/HEIF
   const fileName = file.name.toLowerCase()
   const isHeicFile = fileName.endsWith('.heic') || fileName.endsWith('.heif') ||
@@ -9,46 +22,23 @@ export async function convertHeicToJpeg(file: File): Promise<File> {
 
   if (!isHeicFile) {
     // If not HEIC, return original file
+    console.log('File is not HEIC, returning as-is')
     return file
   }
 
-  console.log('Converting HEIC file:', fileName)
+  console.log('HEIC file detected, providing conversion guidance')
 
-  try {
-    // Convert HEIC to JPEG using heic2any
-    const convertedBlob = await heic2any({
-      blob: file,
-      toType: 'image/jpeg',
-      quality: 0.9
-    })
+  // For HEIC files, provide helpful guidance instead of trying to convert
+  throw new HeicConversionError(
+    'HEIC files need to be converted to JPEG or PNG format. ' +
+    'Please use your device\'s Photos app or an online converter to convert the image first, then upload again.',
+    true
+  )
+}
 
-    // heic2any returns Blob | Blob[], but we expect single blob for single file
-    const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob
-
-    // Create a new File object with JPEG type
-    const convertedFileName = fileName.replace(/\.(heic|heif)$/i, '.jpg')
-    const convertedFile = new File(
-      [resultBlob],
-      convertedFileName,
-      {
-        type: 'image/jpeg',
-        lastModified: file.lastModified
-      }
-    )
-
-    console.log('HEIC conversion successful:', {
-      originalName: fileName,
-      convertedName: convertedFileName,
-      originalSize: file.size,
-      convertedSize: convertedFile.size
-    })
-
-    return convertedFile
-
-  } catch (error) {
-    console.error('Error converting HEIC file:', error)
-    throw new Error('Failed to convert HEIC file. Please try converting to JPEG manually or use a different image.')
-  }
+// Legacy function for backward compatibility
+export async function convertHeicToJpeg(file: File): Promise<File> {
+  return processImageFile(file)
 }
 
 export function isHeicFile(file: File): boolean {

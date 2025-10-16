@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { processImageFile } from '@/lib/heicConverter'
+import { processImageFile, HeicConversionError } from '@/lib/heicConverter'
 
 interface SimpleImageUploadProps {
   onImageUpload: (file: File, previewUrl: string) => void
@@ -48,7 +48,13 @@ export default function SimpleImageUpload({
       onImageUpload(processedFile, previewUrl)
     } catch (error) {
       console.error('Error processing file:', error)
-      setError(error instanceof Error ? error.message : 'Failed to process image')
+
+      if (error instanceof HeicConversionError) {
+        // Special handling for HEIC files with conversion instructions
+        setError(error.message)
+      } else {
+        setError(error instanceof Error ? error.message : 'Failed to process image')
+      }
     }
   }
 

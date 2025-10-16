@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { validateImageFile, optimizeImageFile } from '@/lib/imageOptimization'
-import { processImageFile } from '@/lib/heicConverter'
+import { processImageFile, HeicConversionError } from '@/lib/heicConverter'
 import ImageCropper from './ImageCropper'
 
 interface ProductImage {
@@ -140,7 +140,13 @@ export default function MultiImageUpload({
 
       } catch (error) {
         console.error('Error processing image file:', error)
-        alert(error instanceof Error ? error.message : 'Failed to process image file')
+
+        if (error instanceof HeicConversionError) {
+          // Show a more helpful dialog for HEIC files
+          alert(`📱 HEIC File Detected\n\n${error.message}\n\n💡 How to convert:\n• iOS: Open Photos → Select image → Share → Save to Files (choose JPEG)\n• Online: Use converter.app or similar tools\n• Mac: Open Preview → Export → Choose JPEG format`)
+        } else {
+          alert(error instanceof Error ? error.message : 'Failed to process image file')
+        }
         return
       }
     }

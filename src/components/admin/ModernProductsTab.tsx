@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getAllProducts, getCategories } from '@/lib/database'
-import MultiImageUpload from '@/components/MultiImageUpload'
+import NewImageUpload from '@/components/NewImageUpload'
 import ColorVariants from '@/components/ColorVariants'
 
 interface Product {
@@ -822,7 +822,7 @@ function ProductFormModal({
 
           {/* Product Images */}
           <div>
-            <MultiImageUpload
+            <NewImageUpload
               images={images}
               onImagesChange={setImages}
               productName={formData.name || ''}

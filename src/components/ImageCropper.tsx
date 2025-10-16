@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import ReactCrop, {
   type Crop,
   centerCrop,
@@ -50,12 +50,57 @@ export default function ImageCropper({
   const [completedCrop, setCompletedCrop] = useState<Crop>()
   const [scale, setScale] = useState(1)
   const [rotate, setRotate] = useState(0)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Set up a timeout for image loading
+  useEffect(() => {
+    console.log('ImageCropper mounted with src:', src)
+
+    // Clear any existing timeout
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current)
+    }
+
+    // Reset states when src changes
+    setImageLoaded(false)
+    setImageError(false)
+
+    // Set a timeout for image loading (10 seconds)
+    loadTimeoutRef.current = setTimeout(() => {
+      console.error('Image loading timeout for:', src)
+      setImageError(true)
+      setImageLoaded(false)
+    }, 10000)
+
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current)
+      }
+    }
+  }, [src])
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget
+    console.log('Image loaded successfully:', { width, height, src })
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current)
+    }
+    setImageLoaded(true)
+    setImageError(false)
     setCrop(centerAspectCrop(width, height, aspectRatio))
+  }
+
+  function onImageError(e: React.SyntheticEvent<HTMLImageElement>) {
+    console.error('Image failed to load:', src, e)
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current)
+    }
+    setImageError(true)
+    setImageLoaded(false)
   }
 
   const getCroppedImg = useCallback(() => {
@@ -182,24 +227,44 @@ export default function ImageCropper({
             </div>
 
             {/* Crop Area */}
-            <div className="flex justify-center bg-gray-100 p-4 rounded-lg">
-              <ReactCrop
-                crop={crop}
-                onChange={(pixelCrop, percentCrop) => setCrop(percentCrop)}
-                onComplete={(pixelCrop) => setCompletedCrop(pixelCrop)}
-                aspect={aspectRatio}
-                minWidth={minWidth}
-                minHeight={minHeight}
-              >
-                <img
-                  ref={imgRef}
-                  alt="Crop preview"
-                  src={src}
-                  style={{ transform: `scale(${scale}) rotate(${rotate}deg)` }}
-                  onLoad={onImageLoad}
-                  className="max-w-full max-h-96"
-                />
-              </ReactCrop>
+            <div className="flex justify-center bg-gray-100 p-4 rounded-lg min-h-[300px] items-center">
+              {imageError ? (
+                <div className="text-center text-red-500">
+                  <p>Failed to load image</p>
+                  <p className="text-sm text-gray-500 mt-1">Please try again with a different image</p>
+                  <p className="text-xs text-gray-400 mt-2">Source: {src}</p>
+                </div>
+              ) : !imageLoaded ? (
+                <div className="text-center text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto mb-2"></div>
+                  <p>Loading image...</p>
+                  {/* Hidden image to trigger load events */}
+                  <img
+                    ref={imgRef}
+                    alt="Loading"
+                    src={src}
+                    onLoad={onImageLoad}
+                    onError={onImageError}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+              ) : (
+                <ReactCrop
+                  crop={crop}
+                  onChange={(pixelCrop, percentCrop) => setCrop(percentCrop)}
+                  onComplete={(pixelCrop) => setCompletedCrop(pixelCrop)}
+                  aspect={aspectRatio}
+                  minWidth={minWidth}
+                  minHeight={minHeight}
+                >
+                  <img
+                    alt="Crop preview"
+                    src={src}
+                    style={{ transform: `scale(${scale}) rotate(${rotate}deg)` }}
+                    className="max-w-full max-h-96"
+                  />
+                </ReactCrop>
+              )}
             </div>
 
             {/* Preset aspect ratios */}
@@ -261,7 +326,7 @@ export default function ImageCropper({
               </button>
               <button
                 onClick={handleCropConfirm}
-                disabled={!completedCrop}
+                disabled={!completedCrop || !imageLoaded || imageError}
                 className="px-4 py-2 bg-cream-300 text-white rounded-lg hover:bg-cream-300/90 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Apply Crop
