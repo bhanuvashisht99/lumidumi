@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
 import { validateAdminAuth } from '@/lib/adminAuth'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +8,7 @@ export async function GET(
 ) {
   const { id } = params
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('product_colors')
       .select('*')
       .eq('product_id', id)
@@ -28,7 +23,7 @@ export async function GET(
     }
 
     // Parse JSON fields
-    const parsedData = (data || []).map(color => {
+    const parsedData = (data || []).map((color: any) => {
       let imageUrls = []
       try {
         if (color.image_urls) {

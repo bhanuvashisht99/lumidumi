@@ -173,7 +173,7 @@ export default function ProductsPage() {
       const allProducts = await getProducts()
 
       // Load products first, then lazy load images and colors
-      setProducts(allProducts.map(product => ({ ...product, images: [], colors: [] })))
+      setProducts(allProducts.map((product: any) => ({ ...product, images: [], colors: [] })))
       setLoading(false)
 
       // Batch load images and colors for visible products (first 6)

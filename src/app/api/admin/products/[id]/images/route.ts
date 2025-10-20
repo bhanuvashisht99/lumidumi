@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +7,7 @@ export async function GET(
 ) {
   const { id } = params
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('product_images')
       .select('*')
       .eq('product_id', id)
@@ -27,7 +22,7 @@ export async function GET(
     }
 
     // Filter out problematic URLs before sending to frontend
-    const filteredData = (data || []).filter(image => {
+    const filteredData = (data || []).filter((image: any) => {
       if (!image.url || typeof image.url !== 'string') return false
       if (image.url.includes('blob:')) {
         console.log('API: Filtering out blob URL:', image.url)
