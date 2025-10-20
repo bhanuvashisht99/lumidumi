@@ -11,6 +11,9 @@ interface ProductImage {
   is_primary: boolean
   sort_order: number
   uploading?: boolean
+  // Local file support
+  file?: File  // Original file for uploading later
+  isLocal?: boolean  // Whether this is a local file or server URL
 }
 
 interface NewImageUploadProps {
@@ -40,8 +43,6 @@ export default function NewImageUpload({
   const handleCropComplete = useCallback(async (croppedBlob: Blob) => {
     if (!cropperFile) return
 
-    setUploading(true)
-
     try {
       // Convert blob to file
       const croppedFile = new File([croppedBlob], cropperFile.name, {
@@ -51,29 +52,18 @@ export default function NewImageUpload({
 
       console.log('Cropped file created:', croppedFile.name, croppedFile.type, croppedFile.size)
 
-      // Upload to server
-      const formData = new FormData()
-      formData.append('file', croppedFile)
+      // Create local preview URL instead of uploading immediately
+      const previewUrl = URL.createObjectURL(croppedBlob)
 
-      const uploadResponse = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload image')
-      }
-
-      const uploadResult = await uploadResponse.json()
-      console.log('Upload successful:', uploadResult)
-
-      // Create new image object
+      // Create new image object with local file
       const newImage: ProductImage = {
-        url: uploadResult.url,
+        url: previewUrl,
         alt_text: `${productName} - Image ${images.length + 1}`,
         is_primary: images.length === 0, // First image is primary
         sort_order: images.length,
-        uploading: false
+        uploading: false,
+        file: croppedFile, // Store the file for later upload
+        isLocal: true
       }
 
       // Add to images array

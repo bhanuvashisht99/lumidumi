@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { User, Session } from '@supabase/supabase-js'
-import { useAuthPersistence } from '@/hooks/useAuthPersistence'
 
 interface AuthContextType {
   user: User | null
@@ -23,12 +22,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const { saveAuthState, restoreAuthState, clearAuthState } = useAuthPersistence()
-
   useEffect(() => {
     let mounted = true
 
-    // Get initial session with better error handling
+    // Get initial session
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase?.auth.getSession()
@@ -41,7 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(session)
         setUser(session?.user ?? null)
-        await checkAdminStatus(session?.user ?? null)
+
+        // Check admin status
+        if (session?.user) {
+          await checkAdminStatus(session.user)
+        }
+
         setLoading(false)
       } catch (error) {
         console.error('Error initializing auth:', error)
@@ -91,52 +93,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        await checkAdminStatus(session?.user ?? null)
+        if (session?.user) {
+          await checkAdminStatus(session.user)
+        } else {
+          setIsAdmin(false)
+        }
+
         setLoading(false)
       }
     ) ?? { data: { subscription: null } }
 
-    // Handle visibility change (tab switching) to refresh session
-    const handleVisibilityChange = async () => {
-      if (!document.hidden && mounted) {
-        try {
-          const { data: { session } } = await supabase?.auth.getSession()
-          if (session && (!user || user.id !== session.user.id)) {
-            setSession(session)
-            setUser(session.user)
-            await checkAdminStatus(session.user)
-          }
-        } catch (error) {
-          console.error('Error refreshing session on visibility change:', error)
-        }
-      }
-    }
-
-    // Handle focus event (mobile app returning from background)
-    const handleFocus = async () => {
-      if (mounted) {
-        try {
-          const { data: { session } } = await supabase?.auth.getSession()
-          if (session && (!user || user.id !== session.user.id)) {
-            setSession(session)
-            setUser(session.user)
-            await checkAdminStatus(session.user)
-          }
-        } catch (error) {
-          console.error('Error refreshing session on focus:', error)
-        }
-      }
-    }
-
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-
     return () => {
       mounted = false
       subscription?.unsubscribe()
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
     }
   }, [])
 
@@ -147,6 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // Add timeout to admin check
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+
       // Check if user has admin role
       const { data: profile } = await supabase
         .from('profiles')
@@ -154,8 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', user.id)
         .single()
 
+      clearTimeout(timeoutId)
       setIsAdmin(profile?.role === 'admin')
     } catch (error) {
+      console.error('Error checking admin status:', error)
       setIsAdmin(false)
     }
   }
@@ -221,7 +196,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return
 
     await supabase.auth.signOut()
-    clearAuthState() // Clear persistent auth data
     setIsAdmin(false)
   }
 

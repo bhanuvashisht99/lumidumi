@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { validateImageFile, optimizeImageFile } from '@/lib/imageOptimization'
-import { processImageFile, HeicConversionError } from '@/lib/heicConverter'
+import { processImageFileWithFallback, HeicConversionError, isHeicFile } from '@/lib/heicConverterBrowser'
 import ImageCropper from './ImageCropper'
 
 interface ProductImage {
@@ -12,6 +12,9 @@ interface ProductImage {
   is_primary: boolean
   sort_order: number
   uploading?: boolean
+  // Local file support
+  file?: File  // Original file for uploading later
+  isLocal?: boolean  // Whether this is a local file or server URL
 }
 
 interface MultiImageUploadProps {
@@ -49,8 +52,14 @@ export default function MultiImageUpload({
       console.log('Single file selected for cropping:', file)
 
       try {
-        // Process HEIC files first (converts to JPEG if needed)
-        const processedFile = await processImageFile(file)
+        // For HEIC files, provide user guidance instead of trying to process them
+        if (isHeicFile(file)) {
+          alert('HEIC files cannot be cropped in the browser. Please:\n\n• Convert to JPEG using your phone\'s Photos app (Share > Save as JPEG)\n• Or change iPhone camera settings: Settings > Camera > Formats > Most Compatible\n\nThen try uploading again.')
+          return
+        }
+
+        // Process non-HEIC files normally
+        const processedFile = await processImageFileWithFallback(file)
         console.log('File processed successfully:', processedFile.name, processedFile.type)
 
         const validation = validateImageFile(processedFile)
@@ -150,9 +159,56 @@ export default function MultiImageUpload({
       }
     }
 
-    // For multiple files, process without cropping
-    await processFiles(fileArray)
+    // For multiple files, process without cropping - use local caching
+    await processFilesLocally(fileArray)
   }, [images, maxImages])
+
+  const processFilesLocally = useCallback(async (fileArray: File[]) => {
+    setUploading(true)
+    const newImages: ProductImage[] = []
+
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i]
+
+      // Skip HEIC files in multiple selection
+      if (isHeicFile(file)) {
+        alert(`HEIC file "${file.name}" skipped. Please convert to JPEG first.`)
+        continue
+      }
+
+      const validation = validateImageFile(file)
+
+      if (!validation.valid) {
+        alert(`Error with ${file.name}: ${validation.error}`)
+        continue
+      }
+
+      try {
+        // Process the file for preview
+        const processedFile = await processImageFileWithFallback(file)
+
+        // Create local preview URL
+        const previewUrl = URL.createObjectURL(processedFile)
+
+        const newImage: ProductImage = {
+          url: previewUrl,
+          alt_text: `${productName} - Image ${images.length + newImages.length + 1}`,
+          is_primary: images.length === 0 && newImages.length === 0, // First image is primary
+          sort_order: images.length + newImages.length,
+          file: processedFile, // Store the file for later upload
+          isLocal: true
+        }
+
+        newImages.push(newImage)
+      } catch (error) {
+        console.error('Error processing image:', error)
+        alert(`Failed to process ${file.name}`)
+      }
+    }
+
+    onImagesChange([...images, ...newImages])
+    setUploading(false)
+  }, [images, productName, onImagesChange])
 
   const processFiles = useCallback(async (fileArray: File[]) => {
     setUploading(true)
@@ -280,8 +336,20 @@ export default function MultiImageUpload({
         lastModified: Date.now()
       })
 
-      // Process the cropped file
-      await processFiles([croppedFile])
+      // Create local preview URL
+      const previewUrl = URL.createObjectURL(croppedImageBlob)
+
+      // Add to images as local file (not uploaded yet)
+      const newImage: ProductImage = {
+        url: previewUrl,
+        alt_text: `${productName} - Image ${images.length + 1}`,
+        is_primary: images.length === 0, // First image is primary
+        sort_order: images.length,
+        file: croppedFile, // Store the file for later upload
+        isLocal: true
+      }
+
+      onImagesChange([...images, newImage])
 
       // Clean up cropper state and revoke blob URL (only if it's a blob URL)
       if (cropperImage && cropperImage.startsWith('blob:')) {
@@ -293,7 +361,7 @@ export default function MultiImageUpload({
       console.error('Error processing cropped image:', error)
       alert('Failed to process cropped image')
     }
-  }, [cropperFile, processFiles, cropperImage])
+  }, [cropperFile, cropperImage, images, onImagesChange, productName])
 
   const handleCropCancel = useCallback(() => {
     if (cropperImage && cropperImage.startsWith('blob:')) {
@@ -418,14 +486,15 @@ export default function MultiImageUpload({
 
       {/* Image optimization info */}
       <div className="text-xs text-charcoal/50 bg-cream-50 p-3 rounded-lg">
-        <p className="font-medium mb-1">📈 Image Optimization:</p>
+        <p className="font-medium mb-1">📈 Image Management:</p>
         <ul className="space-y-1">
-          <li>• Images are automatically compressed to optimal size</li>
+          <li>• Images are previewed locally before saving</li>
+          <li>• Single images can be cropped before adding</li>
           <li>• Maximum size: 10MB per image</li>
-          <li>• Supported formats: JPEG, PNG, WebP, HEIC</li>
-          <li>• HEIC files are automatically converted to JPEG</li>
+          <li>• Supported formats: JPEG, PNG, WebP</li>
+          <li>• HEIC files: Please convert to JPEG first</li>
+          <li>• Images are uploaded when you save the product</li>
           <li>• First image becomes the primary product image</li>
-          <li>• Single images can be cropped before upload</li>
         </ul>
       </div>
 

@@ -52,7 +52,6 @@ export default function ProductDetailPage() {
 
       const productData = await getProductBySlug(slug)
       console.log('📦 Product data received:', productData)
-      console.log('🔍 Product ID type:', typeof productData?.id, 'Value:', productData?.id)
 
       if (!productData) {
         console.log('❌ No product data found')

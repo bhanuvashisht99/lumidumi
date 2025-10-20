@@ -9,11 +9,14 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    // Parse the request body once and extract all needed data
+    const requestBody = await request.json()
     const {
       razorpay_payment_id,
       razorpay_order_id,
       razorpay_signature,
-    } = await request.json()
+      orderDetails
+    } = requestBody
 
     // Validate required fields
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
@@ -44,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (isSignatureValid) {
       // Payment is verified - save order to database
       try {
-        const { orderDetails } = await request.json()
+        // Use orderDetails from the already parsed request body
 
         // Create order record in database
         const { data: order, error: orderError } = await supabase

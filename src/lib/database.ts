@@ -138,6 +138,8 @@ export async function getProduct(id: string) {
 }
 
 export async function getProductBySlug(slug: string) {
+  console.log('🔍 getProductBySlug called with:', slug)
+
   // First try to find by slug
   let { data, error } = await supabase
     .from('products')
@@ -146,8 +148,11 @@ export async function getProductBySlug(slug: string) {
     .eq('is_active', true)
     .single()
 
+  console.log('📊 Database query result:', { data, error })
+
   // If not found and slug looks like a UUID, try to find by ID
   if (error && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)) {
+    console.log('🔄 Trying UUID lookup for:', slug)
     const result = await supabase
       .from('products')
       .select('*')
@@ -157,13 +162,16 @@ export async function getProductBySlug(slug: string) {
 
     data = result.data
     error = result.error
+    console.log('📊 UUID query result:', { data, error })
   }
 
   if (error) {
-    console.error('Error fetching product by slug/id:', error)
+    console.error('❌ Error fetching product by slug/id:', error)
     return null
   }
 
+  console.log('✅ Returning product data:', data)
+  console.log('🔍 Product ID:', data?.id, 'Type:', typeof data?.id)
   return data
 }
 

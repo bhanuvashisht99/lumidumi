@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { validateAdminAuth } from '@/lib/adminAuth'
 
 // Use service role key for admin operations
 const supabase = createClient(
@@ -8,11 +9,26 @@ const supabase = createClient(
 )
 
 export async function POST(request: NextRequest) {
+  // Validate admin authentication
+  const authResult = await validateAdminAuth(request)
+  if (!authResult.authorized) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.error?.includes('permissions') ? 403 : 401 }
+    )
+  }
   try {
     const { productData, images = [], colors = [] } = await request.json()
 
+    console.log('🔥 API: Received product creation request')
+    console.log('Product data:', productData)
+    console.log('Images count:', images.length)
+    console.log('Images:', images)
+    console.log('Colors count:', colors.length)
+
     // Validate required fields
     if (!productData.name || !productData.description || !productData.price || !productData.stock_quantity) {
+      console.error('❌ API: Missing required fields')
       return NextResponse.json(
         { error: 'Missing required fields: name, description, price, stock_quantity' },
         { status: 400 }
@@ -57,6 +73,7 @@ export async function POST(request: NextRequest) {
 
     // Insert images if provided
     if (images.length > 0) {
+      console.log('🖼️ API: Inserting images for product:', product.id)
       const imageInserts = images.map((img: any, index: number) => ({
         product_id: product.id,
         url: img.url,
@@ -67,14 +84,21 @@ export async function POST(request: NextRequest) {
         thumbnail_url: img.thumbnail_url
       }))
 
-      const { error: imagesError } = await supabase
+      console.log('Image inserts:', imageInserts)
+
+      const { data: insertedImages, error: imagesError } = await supabase
         .from('product_images')
         .insert(imageInserts)
+        .select()
 
       if (imagesError) {
-        console.error('Images creation error:', imagesError)
+        console.error('❌ API: Images creation error:', imagesError)
         // Don't fail the whole operation, just log the error
+      } else {
+        console.log('✅ API: Images inserted successfully:', insertedImages)
       }
+    } else {
+      console.log('ℹ️ API: No images to insert')
     }
 
     // Insert colors if provided
@@ -129,6 +153,15 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  // Validate admin authentication
+  const authResult = await validateAdminAuth(request)
+  if (!authResult.authorized) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.error?.includes('permissions') ? 403 : 401 }
+    )
+  }
+
   try {
     const { productData, images = [], colors = [] } = await request.json()
     const { id, ...updateData } = productData

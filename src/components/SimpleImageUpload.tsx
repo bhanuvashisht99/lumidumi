@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { processImageFile, HeicConversionError } from '@/lib/heicConverter'
+import { processImageFileWithFallback, HeicConversionError, isHeicFile, isHeicConversionSupported } from '@/lib/heicConverterBrowser'
 
 interface SimpleImageUploadProps {
   onImageUpload: (file: File, previewUrl: string) => void
@@ -26,7 +26,7 @@ export default function SimpleImageUpload({
     setProcessing(false)
 
     // Basic validation
-    if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+    if (!file.type.startsWith('image/') && !isHeicFile(file)) {
       setError('Please select an image file')
       return
     }
@@ -38,14 +38,15 @@ export default function SimpleImageUpload({
 
     try {
       // Show processing state for HEIC files
-      const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
-      if (isHeic) {
+      const isHeicImage = isHeicFile(file)
+      if (isHeicImage) {
         setProcessing(true)
+        console.log('Processing HEIC file:', file.name)
       }
 
       // Process the file (handles HEIC conversion if needed)
       console.log('Processing file:', file.name, file.type)
-      const processedFile = await processImageFile(file)
+      const processedFile = await processImageFileWithFallback(file)
       console.log('File processed:', processedFile.name, processedFile.type)
 
       // Create preview URL
@@ -119,10 +120,10 @@ export default function SimpleImageUpload({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
               <div>
                 <p className="text-lg font-medium text-blue-700">
-                  Converting HEIC image...
+                  Processing image...
                 </p>
                 <p className="text-sm text-blue-600 mt-2">
-                  This may take a moment for iPhone photos
+                  Processing your image for upload
                 </p>
               </div>
             </>
@@ -153,8 +154,8 @@ export default function SimpleImageUpload({
 
       {/* Error Message */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          {error}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="whitespace-pre-line">{error}</div>
         </div>
       )}
     </div>

@@ -32,7 +32,7 @@ export default function ProductColorSelector({
 
   // Initialize with first available color or default
   useEffect(() => {
-    if (colors.length > 0) {
+    if (colors.length > 0 && !selectedColor) {
       const defaultColor = defaultColorId
         ? colors.find(c => c.id === defaultColorId)
         : colors.find(c => c.is_available) || colors[0]
@@ -41,13 +41,10 @@ export default function ProductColorSelector({
         setSelectedColor(defaultColor)
         onColorChange?.(defaultColor)
 
-        // Update images if color has specific images
-        if (defaultColor.image_urls && defaultColor.image_urls.length > 0) {
-          onImageChange?.(defaultColor.image_urls, defaultColor.primary_image)
-        }
+        // Let the parent handle image switching with proper fallback logic
       }
     }
-  }, [colors, defaultColorId, onColorChange, onImageChange])
+  }, [colors, defaultColorId])
 
   const handleColorSelect = (e: React.MouseEvent, color: ColorVariant) => {
     e.preventDefault()
@@ -58,10 +55,8 @@ export default function ProductColorSelector({
     setSelectedColor(color)
     onColorChange?.(color)
 
-    // Update images if color has specific images
-    if (color.image_urls && color.image_urls.length > 0) {
-      onImageChange?.(color.image_urls, color.primary_image)
-    }
+    // Don't pass image change events - let the parent handle it
+    // The parent component will handle image switching with proper fallback logic
   }
 
   const getColorPrice = (color: ColorVariant) => {
@@ -96,13 +91,14 @@ export default function ProductColorSelector({
             return (
               <button
                 key={color.id}
+                type="button"
                 onClick={(e) => handleColorSelect(e, color)}
                 disabled={!isAvailable}
-                className={`relative group p-3 rounded-lg border-2 transition-all ${
+                className={`relative group p-3 rounded-lg border-2 transition-all duration-200 ${
                   isSelected
-                    ? 'border-cream-300 ring-2 ring-cream-300/20'
+                    ? 'border-cream-300 ring-4 ring-cream-300/30 bg-cream-50 shadow-lg transform scale-105'
                     : isAvailable
-                    ? 'border-cream-200 hover:border-cream-300'
+                    ? 'border-cream-200 hover:border-cream-300 hover:shadow-sm'
                     : 'border-cream-100 opacity-50 cursor-not-allowed'
                 }`}
                 title={`${color.color_name} - ₹${price.toLocaleString()}`}
@@ -110,21 +106,25 @@ export default function ProductColorSelector({
                 {/* Color swatch */}
                 <div className="flex flex-col items-center space-y-2">
                   <div
-                    className={`w-8 h-8 rounded-full border border-gray-300 ${
-                      !isAvailable ? 'opacity-50' : ''
-                    }`}
+                    className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ${
+                      isSelected
+                        ? 'border-white shadow-lg transform scale-110'
+                        : 'border-gray-300'
+                    } ${!isAvailable ? 'opacity-50' : ''}`}
                     style={{ backgroundColor: color.color_code }}
                   >
                     {/* Selection indicator */}
                     {isSelected && (
                       <div className="w-full h-full rounded-full flex items-center justify-center">
-                        <div className="w-3 h-3 rounded-full bg-white border border-gray-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-white border-2 border-gray-600 shadow-sm"></div>
                       </div>
                     )}
                   </div>
 
                   {/* Color name */}
-                  <span className="text-xs text-charcoal/70 text-center leading-tight">
+                  <span className={`text-xs text-center leading-tight font-medium transition-colors duration-200 ${
+                    isSelected ? 'text-cream-300 font-semibold' : 'text-charcoal/70'
+                  }`}>
                     {color.color_name}
                   </span>
 

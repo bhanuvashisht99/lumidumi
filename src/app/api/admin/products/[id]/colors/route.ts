@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { validateAdminAuth } from '@/lib/adminAuth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,9 +9,9 @@ const supabase = createClient(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = await params
+  const { id } = params
   try {
     const { data, error } = await supabase
       .from('product_colors')
@@ -43,9 +44,24 @@ export async function GET(
         imageUrls = []
       }
 
+      // Filter out problematic URLs from image_urls
+      const filteredImageUrls = imageUrls.filter((url: any) => {
+        if (!url || typeof url !== 'string') return false
+        if (url.includes('blob:')) {
+          console.log('API: Filtering out blob URL from color:', url)
+          return false
+        }
+        // Temporarily allow HEIC files for display (they may not load in all browsers)
+        // if (url.toLowerCase().includes('.heic') || url.toLowerCase().includes('.heif')) {
+        //   console.log('API: Filtering out HEIC file from color:', url)
+        //   return false
+        // }
+        return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')
+      })
+
       return {
         ...color,
-        image_urls: imageUrls
+        image_urls: filteredImageUrls
       }
     })
 

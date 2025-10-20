@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getProductBySlug } from '@/lib/database'
 import { useCart } from '@/contexts/CartContext'
-import ImprovedColorSelector from '@/components/ImprovedColorSelector'
+import ProductColorSelector from '@/components/ProductColorSelector'
 
 interface ProductImage {
   id: string
@@ -32,11 +32,13 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [currentImages, setCurrentImages] = useState<string[]>([])
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null)
   const [currentPrice, setCurrentPrice] = useState(0)
+
+
+
 
   useEffect(() => {
     if (params.slug) {
@@ -48,37 +50,27 @@ export default function ProductDetailPage() {
     try {
       console.log('🔍 Loading product with slug:', slug)
       setLoading(true)
-      setError(null)
-
       const productData = await getProductBySlug(slug)
       console.log('📦 Product data received:', productData)
-      console.log('🔍 Product ID type:', typeof productData?.id, 'Value:', productData?.id)
 
       if (!productData) {
-        console.log('❌ No product data found')
-        setError('Product not found')
-        setLoading(false)
+        console.log('❌ No product data found, redirecting to products')
+        router.push('/products')
         return
       }
 
-      // Fetch images and colors in parallel
+      // Fetch images and colors
       console.log('🔗 Fetching images and colors for product ID:', productData.id)
       const [imagesResponse, colorsResponse] = await Promise.all([
-        fetch(`/api/admin/products/${productData.id}/images`).catch(e => {
-          console.error('Images fetch error:', e)
-          return { ok: false }
-        }),
-        fetch(`/api/admin/products/${productData.id}/colors`).catch(e => {
-          console.error('Colors fetch error:', e)
-          return { ok: false }
-        })
+        fetch(`/api/admin/products/${productData.id}/images`),
+        fetch(`/api/admin/products/${productData.id}/colors`)
       ])
 
-      console.log('📸 Images response:', imagesResponse.ok, 'status' in imagesResponse ? imagesResponse.status : 'unknown')
-      console.log('🎨 Colors response:', colorsResponse.ok, 'status' in colorsResponse ? colorsResponse.status : 'unknown')
+      console.log('📸 Images response:', imagesResponse.ok, imagesResponse.status)
+      console.log('🎨 Colors response:', colorsResponse.ok, colorsResponse.status)
 
-      const images = imagesResponse.ok && 'json' in imagesResponse ? await imagesResponse.json() : []
-      const colors = colorsResponse.ok && 'json' in colorsResponse ? await colorsResponse.json() : []
+      const images = imagesResponse.ok ? await imagesResponse.json() : []
+      const colors = colorsResponse.ok ? await colorsResponse.json() : []
 
       console.log('📸 Images received:', images)
       console.log('🎨 Colors received:', colors)
@@ -87,24 +79,36 @@ export default function ProductDetailPage() {
       console.log('✅ Setting product with details:', productWithDetails)
       setProduct(productWithDetails)
 
-      // Set initial images
-      const initialImages = Array.isArray(images)
-        ? images.map((img: ProductImage) => img.url).filter(url => url && typeof url === 'string')
-        : []
+      // Set initial images and price
+      const initialImages = images.map((img: ProductImage) => img.url)
 
-      console.log('🖼️ Initial images:', initialImages)
-      setCurrentImages(initialImages)
+      // Filter out problematic URLs immediately
+      const filteredImages = initialImages.filter((url: any) => {
+        if (!url || typeof url !== 'string') return false
+        if (url.includes('blob:')) return false
+        // Temporarily allow HEIC files (some browsers may not support them)
+        // if (url.toLowerCase().includes('.heic') || url.toLowerCase().includes('.heif')) return false
+        return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')
+      })
+      setCurrentImages(filteredImages)
       setCurrentPrice(productData.price)
 
-      // If no colors, just use product images
-      if (!colors || colors.length === 0) {
-        console.log('ℹ️ No colors found, using product images only')
-        setSelectedImageIndex(0)
+      // Set default color if available
+      if (colors.length > 0) {
+        const defaultColor = colors.find((c: ProductColor) => c.is_available) || colors[0]
+        setSelectedColor(defaultColor)
+        setCurrentPrice(productData.price + (defaultColor.price_modifier || 0))
+
+        // Update images if color has specific images
+        if (defaultColor.image_urls && defaultColor.image_urls.length > 0) {
+          setCurrentImages(defaultColor.image_urls)
+          setSelectedImageIndex(0)
+        }
       }
 
     } catch (error) {
       console.error('❌ Error loading product:', error)
-      setError('Failed to load product')
+      router.push('/products')
     } finally {
       console.log('✅ Setting loading to false')
       setLoading(false)
@@ -112,47 +116,63 @@ export default function ProductDetailPage() {
   }
 
   const handleColorChange = (color: ProductColor) => {
-    console.log('🎨 Color changed to:', color.color_name)
-    console.log('🖼️ Color image URLs:', color.image_urls)
-
     setSelectedColor(color)
-
     if (product) {
       const newPrice = product.price + (color.price_modifier || 0)
       setCurrentPrice(newPrice)
-      console.log('💰 Price updated to:', newPrice)
     }
 
-    // Handle image switching
+    // Try color-specific images first, fallback to product images
     let imagesToUse = []
 
-    // Try color-specific images first
-    if (color.image_urls && Array.isArray(color.image_urls) && color.image_urls.length > 0) {
-      const validColorImages = color.image_urls.filter(url => {
-        return url && typeof url === 'string' && !url.includes('blob:')
+    // Check if color has valid images
+    if (color.image_urls && color.image_urls.length > 0) {
+      const filteredColorImages = color.image_urls.filter(url => {
+        if (!url || typeof url !== 'string') return false
+        if (url.includes('blob:')) return false
+        // Temporarily allow HEIC files (they may not display in all browsers)
+        return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')
       })
 
-      if (validColorImages.length > 0) {
-        console.log('✅ Using color-specific images:', validColorImages)
-        imagesToUse = validColorImages
+      if (filteredColorImages.length > 0) {
+        imagesToUse = filteredColorImages
       }
     }
 
-    // Fallback to product images if no color images
-    if (imagesToUse.length === 0 && product?.images) {
-      const productImages = product.images
-        .map((img: ProductImage) => img.url)
-        .filter((url: any) => url && typeof url === 'string' && !url.includes('blob:'))
+    // Fallback to product images if color has no valid images
+    if (imagesToUse.length === 0) {
+      const productImages = product?.images?.map((img: ProductImage) => img.url) || []
+      const filteredProductImages = productImages.filter((url: any) => {
+        if (!url || typeof url !== 'string') return false
+        if (url.includes('blob:')) return false
+        // Temporarily allow HEIC files (they may not display in all browsers)
+        return url.startsWith('http') || url.startsWith('/') || url.startsWith('data:')
+      })
 
-      console.log('🔄 Falling back to product images:', productImages)
-      imagesToUse = productImages
+      // Try to show different images for different colors by starting from different indices
+      if (filteredProductImages.length > 1) {
+        const colorIndex = product.colors?.findIndex((c: any) => c.id === color.id) || 0
+        const startIndex = colorIndex % filteredProductImages.length
+        // Rotate the array to start from a different image for each color
+        imagesToUse = [
+          ...filteredProductImages.slice(startIndex),
+          ...filteredProductImages.slice(0, startIndex)
+        ]
+      } else {
+        imagesToUse = filteredProductImages
+      }
     }
 
-    // Update images and reset to first image
     setCurrentImages(imagesToUse)
     setSelectedImageIndex(0)
+  }
 
-    console.log('🖼️ Final images to use:', imagesToUse)
+  const handleImageChange = (images: string[], primaryImage?: string) => {
+    setCurrentImages(images)
+    if (primaryImage) {
+      const primaryIndex = images.findIndex(url => url === primaryImage)
+      setSelectedImageIndex(primaryIndex >= 0 ? primaryIndex : 0)
+    }
   }
 
   const nextImage = () => {
@@ -167,26 +187,19 @@ export default function ProductDetailPage() {
     }
   }
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-cream-50 pt-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cream-300 mx-auto"></div>
-          <p className="mt-4 text-charcoal/60">Loading product...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cream-300"></div>
       </div>
     )
   }
 
-  // Error state
-  if (error || !product) {
+  if (!product) {
     return (
       <div className="min-h-screen bg-cream-50 pt-20 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-charcoal mb-4">
-            {error || 'Product Not Found'}
-          </h1>
+          <h1 className="text-2xl font-bold text-charcoal mb-4">Product Not Found</h1>
           <button
             onClick={() => router.push('/products')}
             className="btn-primary"
@@ -219,11 +232,15 @@ export default function ProductDetailPage() {
                 <>
                   <img
                     src={currentImages[selectedImageIndex]}
-                    alt={`${product.name} - ${selectedColor?.color_name || 'Product'}`}
+                    alt={product.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      console.error('Image failed to load:', currentImages[selectedImageIndex])
-                      e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2Y1ZjNmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+'
+                      // If color-specific image fails, fallback to product images
+                      if (selectedColor && product.images?.length > 0) {
+                        const productImages = product.images.map((img: ProductImage) => img.url)
+                        setCurrentImages(productImages)
+                        setSelectedImageIndex(0)
+                      }
                     }}
                   />
 
@@ -258,7 +275,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Gallery */}
-            {currentImages.length > 1 && (
+            {currentImages.length > 0 && (
               <div className="flex space-x-2 overflow-x-auto">
                 {currentImages.map((imageUrl, index) => (
                   <button
@@ -309,10 +326,11 @@ export default function ProductDetailPage() {
 
             {/* Color Selection */}
             {product.colors && product.colors.length > 0 && (
-              <ImprovedColorSelector
+              <ProductColorSelector
                 colors={product.colors}
                 basePrice={product.price}
                 onColorChange={handleColorChange}
+                onImageChange={handleImageChange}
               />
             )}
 

@@ -1,8 +1,9 @@
 'use client'
 
+// Fixed syntax errors
 import { useState, useEffect } from 'react'
 import { getAllProducts, getCategories } from '@/lib/database'
-import NewImageUpload from '@/components/NewImageUpload'
+import ModernImageUpload from '@/components/ModernImageUpload'
 import ColorVariants from '@/components/ColorVariants'
 
 interface Product {
@@ -49,6 +50,7 @@ export default function ModernProductsTab() {
   const [formData, setFormData] = useState<Partial<Product>>({})
   const [formImages, setFormImages] = useState<any[]>([])
   const [formColors, setFormColors] = useState<any[]>([])
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   // Load data on mount
   useEffect(() => {
@@ -59,28 +61,63 @@ export default function ModernProductsTab() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
+      console.log('Starting products fetch...')
+
       // Fetch products with related images and colors
       const data = await getAllProducts()
+      console.log('Got products data:', data?.length || 0, 'products')
 
-      // For each product, fetch its images and colors
+      // If we have no products, just set empty array and finish
+      if (!data || data.length === 0) {
+        console.log('No products found, setting empty array')
+        setProducts([])
+        return
+      }
+
+      // For each product, fetch its images and colors with timeout and error handling
       const productsWithRelations = await Promise.all(
         data.map(async (product: Product) => {
-          // Fetch images
-          const imagesResponse = await fetch(`/api/admin/products/${product.id}/images`)
-          const images = imagesResponse.ok ? await imagesResponse.json() : []
+          try {
+            // Create timeout promises for each request
+            const timeoutMs = 5000 // 5 second timeout
 
-          // Fetch colors
-          const colorsResponse = await fetch(`/api/admin/products/${product.id}/colors`)
-          const colors = colorsResponse.ok ? await colorsResponse.json() : []
+            const fetchWithTimeout = async (url: string) => {
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
-          return { ...product, images, colors }
+              try {
+                const response = await fetch(url, { signal: controller.signal })
+                clearTimeout(timeoutId)
+                return response.ok ? await response.json() : []
+              } catch (error) {
+                clearTimeout(timeoutId)
+                console.warn(`Failed to fetch ${url}:`, error)
+                return []
+              }
+            }
+
+            // Fetch images and colors with timeout
+            const [images, colors] = await Promise.all([
+              fetchWithTimeout(`/api/admin/products/${product.id}/images`),
+              fetchWithTimeout(`/api/admin/products/${product.id}/colors`)
+            ])
+
+            console.log(`Product ${product.name}: ${images.length} images, ${colors.length} colors`)
+            return { ...product, images, colors }
+          } catch (error) {
+            console.warn(`Failed to fetch relations for product ${product.id}:`, error)
+            return { ...product, images: [], colors: [] }
+          }
         })
       )
 
+      console.log('Successfully loaded', productsWithRelations.length, 'products with relations')
       setProducts(productsWithRelations)
     } catch (error) {
       console.error('Error fetching products:', error)
       alert('Error loading products. Please refresh the page.')
+      // Set empty products array on error
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -128,6 +165,7 @@ export default function ModernProductsTab() {
     })
     setFormImages([])
     setFormColors([])
+    setSaveSuccess(false)
     setShowAddForm(true)
     setEditingProduct(null)
   }
@@ -158,11 +196,19 @@ export default function ModernProductsTab() {
     setFormData(cleanFormData)
     setFormImages(product.images || [])
     setFormColors(product.colors || [])
+    setSaveSuccess(false)
     setEditingProduct(product)
     setShowAddForm(true)
   }
 
   const closeForm = () => {
+    // Clean up any blob URLs
+    formImages.forEach(image => {
+      if (image.isLocal && image.url.startsWith('blob:')) {
+        URL.revokeObjectURL(image.url)
+      }
+    })
+
     setShowAddForm(false)
     setEditingProduct(null)
     setFormData({})
@@ -179,15 +225,82 @@ export default function ModernProductsTab() {
     }
 
     try {
+      console.log('🔄 Starting product save process...')
+      console.log('Form data:', formData)
+      console.log('Form images:', formImages)
+      console.log('Form colors:', formColors)
+
+      // First, upload any local image files
+      console.log('📤 Processing images for upload...')
+      const processedImages = await Promise.all(
+        formImages.map(async (image, index) => {
+          console.log(`Processing image ${index + 1}:`, {
+            isLocal: image.isLocal,
+            hasFile: !!image.file,
+            url: image.url?.substring(0, 50) + '...',
+            alt_text: image.alt_text
+          })
+
+          // If it's a local file, upload it first
+          if (image.isLocal && image.file) {
+            try {
+              console.log(`📤 Uploading image ${index + 1} to server...`)
+              const uploadFormData = new FormData()
+              uploadFormData.append('file', image.file)
+
+              const uploadResponse = await fetch('/api/upload/image', {
+                method: 'POST',
+                body: uploadFormData
+              })
+
+              console.log(`Upload response status: ${uploadResponse.status}`)
+
+              if (!uploadResponse.ok) {
+                const errorText = await uploadResponse.text()
+                console.error('Upload response error:', errorText)
+                throw new Error('Failed to upload image')
+              }
+
+              const uploadResult = await uploadResponse.json()
+              console.log(`✅ Image ${index + 1} uploaded successfully:`, uploadResult)
+
+              // Clean up local blob URL
+              if (image.url.startsWith('blob:')) {
+                URL.revokeObjectURL(image.url)
+              }
+
+              // Return updated image with server URL
+              return {
+                ...image,
+                url: uploadResult.url,
+                isLocal: false,
+                file: undefined
+              }
+            } catch (error) {
+              console.error(`❌ Failed to upload image ${index + 1}:`, error)
+              throw new Error(`Failed to upload image: ${image.alt_text}`)
+            }
+          }
+
+          // Return existing server image as-is
+          console.log(`✅ Image ${index + 1} already on server, keeping as-is`)
+          return image
+        })
+      )
+
+      console.log('📤 All images processed:', processedImages)
+
       const payload = {
         productData: {
           ...formData,
           slug: formData.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
           tags: JSON.stringify(formData.tags || [])
         },
-        images: formImages,
+        images: processedImages,
         colors: formColors
       }
+
+      console.log('📦 Final payload:', JSON.stringify(payload, null, 2))
 
       const url = editingProduct ? '/api/admin/products' : '/api/admin/products'
       const method = editingProduct ? 'PUT' : 'POST'
@@ -196,20 +309,32 @@ export default function ModernProductsTab() {
         payload.productData.id = editingProduct.id
       }
 
+      console.log(`🚀 Sending ${method} request to ${url}`)
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
+      console.log(`Response status: ${response.status}`)
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('❌ Product save failed:', errorData)
         throw new Error(errorData.error || 'Failed to save product')
       }
 
+      const result = await response.json()
+      console.log('✅ Product saved successfully:', result)
+
+      // Refresh the products list without closing the form
       await fetchProducts()
-      closeForm()
-      alert(`Product ${editingProduct ? 'updated' : 'created'} successfully!`)
+
+      // Show success indicator for 3 seconds
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000)
+
+      console.log('✅ Product saved successfully, staying in form for further editing')
     } catch (error) {
       console.error('Error saving product:', error)
       alert(`Error saving product: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -416,6 +541,7 @@ export default function ModernProductsTab() {
           colors={formColors}
           setColors={setFormColors}
           categories={categories}
+          saveSuccess={saveSuccess}
           onSave={handleSaveProduct}
           onClose={closeForm}
         />
@@ -687,6 +813,7 @@ function ProductFormModal({
   colors,
   setColors,
   categories,
+  saveSuccess,
   onSave,
   onClose
 }: {
@@ -698,6 +825,7 @@ function ProductFormModal({
   colors: any[]
   setColors: (colors: any[]) => void
   categories: Category[]
+  saveSuccess: boolean
   onSave: (e: React.FormEvent) => void
   onClose: () => void
 }) {
@@ -706,9 +834,17 @@ function ProductFormModal({
       <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-cream-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-charcoal">
-              {product ? 'Edit Product' : 'Add New Product'}
-            </h3>
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-semibold text-charcoal">
+                {product ? 'Edit Product' : 'Add New Product'}
+              </h3>
+              {saveSuccess && (
+                <div className="flex items-center text-green-600 text-sm font-medium">
+                  <span className="text-green-500 mr-1">✓</span>
+                  Saved successfully!
+                </div>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="text-charcoal/60 hover:text-charcoal text-xl"
@@ -822,7 +958,7 @@ function ProductFormModal({
 
           {/* Product Images */}
           <div>
-            <NewImageUpload
+            <ModernImageUpload
               images={images}
               onImagesChange={setImages}
               productName={formData.name || ''}

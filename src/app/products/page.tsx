@@ -13,7 +13,7 @@ function ProductCard({ product, images, hasColors, onClick }: {
   product: Product
   images: any[]
   hasColors: boolean
-  onClick: () => void
+  onClick: (e?: any) => void
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
@@ -41,7 +41,7 @@ function ProductCard({ product, images, hasColors, onClick }: {
             <img
               src={currentImage.url}
               alt={currentImage.alt_text || product.name}
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-cover rounded-lg pointer-events-none"
               loading="lazy"
               decoding="async"
             />
@@ -50,16 +50,22 @@ function ProductCard({ product, images, hasColors, onClick }: {
             {images.length > 1 && (
               <>
                 <button
-                  onClick={prevImage}
-                  className="absolute left-1 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-charcoal w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 hover:bg-white hover:scale-110 shadow-lg flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    prevImage(e)
+                  }}
+                  className="absolute left-1 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-charcoal w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 hover:bg-white hover:scale-110 shadow-lg flex items-center justify-center pointer-events-auto"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
                 <button
-                  onClick={nextImage}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-charcoal w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 hover:bg-white hover:scale-110 shadow-lg flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    nextImage(e)
+                  }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-charcoal w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 hover:bg-white hover:scale-110 shadow-lg flex items-center justify-center pointer-events-auto"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -85,7 +91,7 @@ function ProductCard({ product, images, hasColors, onClick }: {
                       e.stopPropagation()
                       setCurrentImageIndex(index)
                     }}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-125 ${
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-125 pointer-events-auto ${
                       currentImageIndex === index ? 'bg-white shadow-sm' : 'bg-white/60 hover:bg-white/80'
                     }`}
                   />
@@ -362,6 +368,7 @@ export default function ProductsPage() {
           {categories.map((category) => (
             <button
               key={category.id}
+              type="button"
               onClick={() => setSelectedCategory(category.id)}
               className={`px-6 py-3 rounded-full font-medium transition-colors ${
                 selectedCategory === category.id
@@ -403,7 +410,9 @@ export default function ProductsPage() {
                   product={product}
                   images={productImages}
                   hasColors={hasColors}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                     const productSlug = product.slug || product.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') || product.id
                     router.push(`/products/${productSlug}`)
                   }}

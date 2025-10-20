@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Image Swapping Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f7f4;
+        }
+        .demo-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .image-gallery {
+            border: 2px solid #e5e2d8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .main-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+        .color-selector {
+            padding: 20px;
+        }
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .color-option {
+            padding: 15px;
+            border: 2px solid #e5e2d8;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            background: white;
+        }
+        .color-option:hover {
+            border-color: #c4a484;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .color-option.selected {
+            border-color: #c4a484;
+            background-color: #f5f3f0;
+            box-shadow: 0 0 0 4px rgba(196, 164, 132, 0.2);
+        }
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            border: 2px solid #ddd;
+        }
+        .color-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+        h1 {
+            color: #8b6f47;
+            text-align: center;
+        }
+        .explanation {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #c4a484;
+        }
+    </style>
+</head>
+<body>
+    <h1>🕯️ Color-Based Image Swapping Demo</h1>
+
+    <div class="explanation">
+        <h3>How it works:</h3>
+        <p>This demonstrates the color-image mapping functionality that's already implemented in your Lumidumi candle e-commerce site. When you click on different color options, the main product image changes to show the candle in that specific color.</p>
+        <p><strong>Your existing code at <code>src/app/products/[slug]/page.tsx</code> already has this functionality!</strong></p>
+    </div>
+
+    <div class="demo-container">
+        <div class="image-gallery">
+            <img id="mainImage" class="main-image" src="https://picsum.photos/400/300?random=1" alt="Mini Peony Candle">
+        </div>
+
+        <div class="color-selector">
+            <h3>Select Color:</h3>
+            <p>Current: <span id="selectedColorName">Rose Pink</span></p>
+
+            <div class="color-options">
+                <div class="color-option selected" data-color="rose-pink" data-image="https://picsum.photos/400/300?random=1">
+                    <div class="color-swatch" style="background-color: #ff69b4;"></div>
+                    <div class="color-name">Rose Pink</div>
+                </div>
+
+                <div class="color-option" data-color="sunset-orange" data-image="https://picsum.photos/400/300?random=2">
+                    <div class="color-swatch" style="background-color: #ff8c00;"></div>
+                    <div class="color-name">Sunset Orange</div>
+                </div>
+
+                <div class="color-option" data-color="vanilla" data-image="https://picsum.photos/400/300?random=3">
+                    <div class="color-swatch" style="background-color: #f5deb3;"></div>
+                    <div class="color-name">Vanilla</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="explanation">
+        <h3>Implementation Status:</h3>
+        <ul>
+            <li>✅ <strong>Color Selection UI</strong> - Interactive color swatches (ProductColorSelector.tsx)</li>
+            <li>✅ <strong>Image Swapping Logic</strong> - handleColorChange function in product page</li>
+            <li>✅ <strong>Color-Specific Images</strong> - Each color can have image_urls array</li>
+            <li>✅ <strong>Database Schema</strong> - product_colors table supports image_urls</li>
+        </ul>
+
+        <h3>To make it work on your site:</h3>
+        <ol>
+            <li>Ensure your products have color variants in the database</li>
+            <li>Add <code>image_urls</code> array to each color variant</li>
+            <li>The existing code will automatically handle image swapping!</li>
+        </ol>
+    </div>
+
+    <script>
+        // Demo JavaScript to show how color selection works
+        const colorOptions = document.querySelectorAll('.color-option');
+        const mainImage = document.getElementById('mainImage');
+        const selectedColorName = document.getElementById('selectedColorName');
+
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Remove selected class from all options
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+
+                // Add selected class to clicked option
+                option.classList.add('selected');
+
+                // Update image and color name
+                const newImage = option.dataset.image;
+                const colorName = option.querySelector('.color-name').textContent;
+
+                mainImage.src = newImage;
+                selectedColorName.textContent = colorName;
+
+                console.log('Color changed to:', colorName);
+                console.log('Image changed to:', newImage);
+            });
+        });
+    </script>
+</body>
+</html>
