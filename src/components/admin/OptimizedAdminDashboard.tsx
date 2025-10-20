@@ -83,7 +83,7 @@ export default function OptimizedAdminDashboard() {
       // Handle orders result
       if (ordersRes.status === 'fulfilled' && !ordersRes.value.error) {
         totalOrders = ordersRes.value.count || 0
-        revenue = ordersRes.value.data?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0
+        revenue = ordersRes.value.data?.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0) || 0
       }
 
       // Handle custom orders result
