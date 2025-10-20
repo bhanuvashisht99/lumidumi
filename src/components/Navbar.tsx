@@ -11,8 +11,6 @@ export default function Navbar() {
   const { isAdmin, user, signOut } = useAuth()
   const { getTotalItems } = useCart()
 
-  // Debug logging
-  console.log('Navbar render - mobileMenuOpen:', mobileMenuOpen)
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -53,10 +51,7 @@ export default function Navbar() {
             <button
               type="button"
               className="flex items-center justify-center w-10 h-10 rounded-lg border border-cream-200 bg-white text-charcoal hover:bg-cream-50 shadow-sm transition-all duration-200 active:scale-95"
-              onClick={() => {
-                console.log('Mobile menu button clicked!')
-                setMobileMenuOpen(true)
-              }}
+              onClick={() => setMobileMenuOpen(true)}
               aria-label="Open mobile menu"
             >
               <Bars3Icon className="h-5 w-5" />
@@ -64,7 +59,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop navigation */}
-          <div className="hidden lg:flex lg:gap-x-12">
+          <div className="hidden lg:flex lg:gap-x-8">
             {navigation.map((item) => (
               <a
                 key={item.name}
@@ -77,7 +72,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop actions */}
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-x-6">
+          <div className="hidden lg:flex lg:items-center lg:gap-x-4">
             <a
               href="/cart"
               className="relative p-2 text-charcoal hover:text-cream-300 transition-colors"
