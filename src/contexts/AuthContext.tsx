@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { User, Session } from '@supabase/supabase-js'
 
@@ -83,8 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const storage = SecureStorage.getInstance()
 
-  // Cache for admin status to avoid repeated checks
-  const [adminStatusCache, setAdminStatusCache] = useState<{ [userId: string]: boolean }>({})
+  // Use ref for cache to avoid dependency issues
+  const adminStatusCacheRef = useRef<{ [userId: string]: boolean }>({})
 
   const checkAdminStatus = useCallback(async (currentUser: User | null) => {
     if (!currentUser || !supabase) {
@@ -92,12 +92,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Check cache first
-    if (adminStatusCache[currentUser.id] !== undefined) {
-      setIsAdmin(adminStatusCache[currentUser.id])
+    // Check memory cache first (fastest)
+    if (adminStatusCacheRef.current[currentUser.id] !== undefined) {
+      const cachedStatus = adminStatusCacheRef.current[currentUser.id]
+      setIsAdmin(cachedStatus)
       return
     }
 
+    // Check localStorage cache (faster than DB)
+    const cachedStatus = storage.getItem(`admin_status_${currentUser.id}`)
+    if (cachedStatus) {
+      try {
+        const isAdminCached = JSON.parse(cachedStatus)
+        setIsAdmin(isAdminCached)
+        adminStatusCacheRef.current[currentUser.id] = isAdminCached
+        return
+      } catch {
+        // Invalid cache, continue to database check
+      }
+    }
+
+    // Only hit the database if no cache exists
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -109,20 +124,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const isAdminUser = profile.role === 'admin'
         setIsAdmin(isAdminUser)
 
-        // Cache the result
-        setAdminStatusCache(prev => ({
-          ...prev,
-          [currentUser.id]: isAdminUser
-        }))
-
-        // Store admin status in local storage for quick access
+        // Cache the result in both memory and localStorage
+        adminStatusCacheRef.current[currentUser.id] = isAdminUser
         storage.setItem(`admin_status_${currentUser.id}`, JSON.stringify(isAdminUser))
       } else {
         setIsAdmin(false)
+        // Cache the negative result too
+        adminStatusCacheRef.current[currentUser.id] = false
+        storage.setItem(`admin_status_${currentUser.id}`, JSON.stringify(false))
       }
     } catch (error) {
       console.error('Error checking admin status:', error)
       setIsAdmin(false)
+      // Don't cache errors
     }
   }, [storage])
 
@@ -169,17 +183,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(currentSession)
         setUser(currentSession.user)
 
-        // Check if we have cached admin status
-        const cachedAdminStatus = storage.getItem(`admin_status_${currentSession.user.id}`)
-        if (cachedAdminStatus) {
-          try {
-            setIsAdmin(JSON.parse(cachedAdminStatus))
-          } catch {
-            // Invalid cache, will be refreshed by checkAdminStatus
+        // Check memory cache first
+        if (adminStatusCacheRef.current[currentSession.user.id] !== undefined) {
+          setIsAdmin(adminStatusCacheRef.current[currentSession.user.id])
+        } else {
+          // Check localStorage cache and set immediately to avoid flickering
+          const cachedAdminStatus = storage.getItem(`admin_status_${currentSession.user.id}`)
+          if (cachedAdminStatus) {
+            try {
+              const isAdminCached = JSON.parse(cachedAdminStatus)
+              setIsAdmin(isAdminCached)
+              adminStatusCacheRef.current[currentSession.user.id] = isAdminCached
+            } catch {
+              // Invalid cache, will be refreshed by checkAdminStatus
+              setIsAdmin(false)
+            }
+          } else {
+            // No cache exists, set false initially to avoid undefined state
+            setIsAdmin(false)
           }
         }
 
-        await checkAdminStatus(currentSession.user)
+        // Async check admin status in background (won't affect UI if cached)
+        checkAdminStatus(currentSession.user)
 
         // Store session info
         storage.setItem('lumidumi_session_info', JSON.stringify({
@@ -220,7 +246,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (currentSession) {
               setSession(currentSession)
               setUser(currentSession.user)
-              await checkAdminStatus(currentSession.user)
+
+              // Set admin status immediately from cache to prevent flickering
+              if (adminStatusCacheRef.current[currentSession.user.id] !== undefined) {
+                setIsAdmin(adminStatusCacheRef.current[currentSession.user.id])
+              } else {
+                const cachedAdminStatus = storage.getItem(`admin_status_${currentSession.user.id}`)
+                if (cachedAdminStatus) {
+                  try {
+                    const isAdminCached = JSON.parse(cachedAdminStatus)
+                    setIsAdmin(isAdminCached)
+                    adminStatusCacheRef.current[currentSession.user.id] = isAdminCached
+                  } catch {
+                    setIsAdmin(false)
+                  }
+                } else {
+                  setIsAdmin(false)
+                }
+              }
+
+              // Background check (won't flicker if cached)
+              checkAdminStatus(currentSession.user)
 
               // Create profile if it doesn't exist
               if (event === 'SIGNED_IN') {
@@ -263,12 +309,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSession(null)
             setUser(null)
             setIsAdmin(false)
-            setAdminStatusCache({})
+            adminStatusCacheRef.current = {}
 
             // Clear all stored auth data
             storage.removeItem('lumidumi_session_info')
-            // Clear admin status cache
-            Object.keys(adminStatusCache).forEach(userId => {
+            // Clear admin status cache from localStorage
+            Object.keys(adminStatusCacheRef.current).forEach(userId => {
               storage.removeItem(`admin_status_${userId}`)
             })
             break
@@ -307,7 +353,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearInterval(refreshInterval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [initializeAuth, checkAdminStatus, refreshSession, session, loading, storage, adminStatusCache])
+  }, [initializeAuth, checkAdminStatus, refreshSession, session, loading, storage])
 
   const signIn = async (email: string, password: string) => {
     try {

@@ -42,7 +42,7 @@ export default function CustomersTab() {
 
   useEffect(() => {
     fetchCustomers()
-  }, [fetchCustomers])
+  }, [])
 
   if (loading) {
     return (

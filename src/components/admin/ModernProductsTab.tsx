@@ -1,7 +1,7 @@
 'use client'
 
 // Fixed syntax errors
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getAllProducts, getCategories } from '@/lib/database'
 import ModernImageUpload from '@/components/ModernImageUpload'
 import ColorVariants from '@/components/ColorVariants'
@@ -52,13 +52,7 @@ export default function ModernProductsTab() {
   const [formColors, setFormColors] = useState<any[]>([])
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  // Load data on mount
-  useEffect(() => {
-    fetchProducts()
-    fetchCategories()
-  }, [])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true)
       console.log('Starting products fetch...')
@@ -121,16 +115,22 @@ export default function ModernProductsTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const data = await getCategories()
       setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
-  }
+  }, [])
+
+  // Load data on mount
+  useEffect(() => {
+    fetchProducts()
+    fetchCategories()
+  }, [])
 
   // Filter products based on search and category
   const filteredProducts = products.filter(product => {

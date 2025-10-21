@@ -89,13 +89,13 @@ export default function OptimizedAdminDashboard() {
     } finally {
       setStatsLoading(false)
     }
-  }, [user])
+  }, [])
 
   useEffect(() => {
     if (user) {
       fetchStats()
     }
-  }, [user, fetchStats])
+  }, [user])
 
   // Memoized stats data
   const statsData = useMemo(() => [

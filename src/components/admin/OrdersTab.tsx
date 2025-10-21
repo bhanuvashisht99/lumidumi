@@ -36,7 +36,7 @@ export default function OrdersTab() {
 
   useEffect(() => {
     fetchOrders()
-  }, [fetchOrders])
+  }, [])
 
   const getStatusBadge = (status: string) => {
     const statusColors = {

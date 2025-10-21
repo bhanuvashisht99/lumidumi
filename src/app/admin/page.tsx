@@ -1,12 +1,12 @@
 'use client'
 
 import AuthGuard from '@/components/AuthGuard'
-import OptimizedAdminDashboard from '@/components/admin/OptimizedAdminDashboard'
+import SimpleAdminDashboard from '@/components/admin/SimpleAdminDashboard'
 
 export default function AdminDashboard() {
   return (
     <AuthGuard requireAdmin={true}>
-      <OptimizedAdminDashboard />
+      <SimpleAdminDashboard />
     </AuthGuard>
   )
 }

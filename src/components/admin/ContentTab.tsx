@@ -108,7 +108,84 @@ export default function ContentTab() {
       ])
 
       // Update content with fetched data or keep defaults
-      const updatedContent = { ...content }
+      const updatedContent = {
+        hero: {
+          title: 'Lumidumi',
+          subtitle: 'Handcrafted candles that illuminate your space with warmth and elegance.',
+          description: 'Each candle is lovingly made with premium wax and carefully selected fragrances.',
+          imageUrl: '',
+          stats: [
+            { value: '100%', label: 'Natural Wax' },
+            { value: '50+', label: 'Unique Scents' },
+            { value: '24h', label: 'Burn Time' }
+          ]
+        },
+        about: {
+          title: 'Crafted with Love',
+          subtitle: 'At Lumidumi, every candle tells a story.',
+          description: 'We believe in the power of handcrafted beauty and the warmth that comes from creating something special with your own hands.',
+          imageUrl: '',
+          features: [
+            { icon: '🌿', title: 'Natural Ingredients', description: 'We use only premium natural wax and carefully sourced fragrances' },
+            { icon: '👐', title: 'Handmade Process', description: 'Each candle is individually crafted with attention to every detail' },
+            { icon: '🎨', title: 'Custom Designs', description: 'Personalized candles for your special moments and occasions' }
+          ]
+        },
+        pricing: {
+          title: 'Custom Order Pricing',
+          startingPrices: [
+            { item: 'Small candles', price: '₹300 - ₹500 each' },
+            { item: 'Medium candles', price: '₹600 - ₹900 each' },
+            { item: 'Large candles', price: '₹1,000 - ₹1,500 each' },
+            { item: 'Bulk orders', price: 'Special pricing available' }
+          ],
+          additionalServices: [
+            { service: 'Custom packaging', price: '₹50 - ₹200 per piece' },
+            { service: 'Personalized labels', price: '₹25 per piece' },
+            { service: 'Rush orders (under 5 days)', price: '+50%' },
+            { service: 'Delivery within city', price: '₹200 - ₹500' }
+          ]
+        },
+        contact: {
+          title: 'Get in Touch',
+          subtitle: 'We\'d love to hear from you. Send us a message and we\'ll respond as soon as possible.',
+          email: 'team@lumidumi.com',
+          phone: '+91 98765 43210',
+          address: 'Mumbai, Maharashtra, India',
+          businessHours: 'Monday - Friday: 9:00 AM - 6:00 PM',
+          socialMedia: {
+            instagram: 'https://instagram.com/lumidumi',
+            facebook: 'https://facebook.com/lumidumi',
+            whatsapp: '+91 98765 43210'
+          }
+        },
+        footer: {
+          description: 'Lumidumi creates handcrafted candles that illuminate your space with warmth and elegance.',
+          quickLinks: [
+            { name: 'About Us', url: '/about' },
+            { name: 'Products', url: '/products' },
+            { name: 'Custom Orders', url: '/custom-orders' },
+            { name: 'Contact', url: '/contact' }
+          ],
+          policies: [
+            { name: 'Privacy Policy', url: '/privacy-policy' },
+            { name: 'Terms of Service', url: '/terms-of-service' },
+            { name: 'Shipping Policy', url: '/shipping-policy' },
+            { name: 'Refund Policy', url: '/refund-policy' }
+          ],
+          contact: {
+            email: 'team@lumidumi.com',
+            phone: '+91 98765 43210',
+            address: 'Mumbai, Maharashtra, India'
+          },
+          socialMedia: {
+            instagram: 'https://instagram.com/lumidumi',
+            facebook: 'https://facebook.com/lumidumi',
+            whatsapp: '+91 98765 43210'
+          },
+          copyright: '© 2025 Lumidumi. All rights reserved.'
+        }
+      }
 
       if (heroRes?.ok) {
         const { data } = await heroRes.json()
@@ -156,7 +233,7 @@ export default function ContentTab() {
 
   useEffect(() => {
     loadAllContent()
-  }, [loadAllContent])
+  }, [])
 
   const handleSave = async (section: string) => {
     try {

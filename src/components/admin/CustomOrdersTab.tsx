@@ -45,7 +45,7 @@ export default function CustomOrdersTab() {
 
   useEffect(() => {
     fetchCustomOrders()
-  }, [fetchCustomOrders])
+  }, [])
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
