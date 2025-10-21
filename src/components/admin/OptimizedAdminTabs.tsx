@@ -1,24 +1,14 @@
 'use client'
 
-import { lazy, Suspense, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import AdminErrorBoundary from './AdminErrorBoundary'
 
-// Lazy load heavy admin components
-const ModernProductsTab = lazy(() => import('./ModernProductsTab'))
-const OrdersTab = lazy(() => import('./OrdersTab'))
-const CustomersTab = lazy(() => import('./CustomersTab'))
-const CustomOrdersTab = lazy(() => import('./CustomOrdersTab'))
-const ContentTab = lazy(() => import('./ContentTab'))
-
-// Loading component
-const TabLoadingSpinner = ({ name }: { name: string }) => (
-  <div className="flex items-center justify-center py-12 bg-white rounded-lg shadow-sm border">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cream-300 mx-auto mb-3"></div>
-      <p className="text-charcoal/60 text-sm">Loading {name}...</p>
-    </div>
-  </div>
-)
+// Direct imports for faster loading since data is preloaded
+import ModernProductsTab from './ModernProductsTab'
+import OrdersTab from './OrdersTab'
+import CustomersTab from './CustomersTab'
+import CustomOrdersTab from './CustomOrdersTab'
+import ContentTab from './ContentTab'
 
 // Error boundary fallback
 const TabErrorFallback = ({ name, onRetry }: { name: string; onRetry: () => void }) => (
@@ -71,45 +61,35 @@ export default function OptimizedAdminTabs({ activeTab }: OptimizedAdminTabsProp
       case 'products':
         return (
           <TabWithErrorBoundary name="Products">
-            <Suspense fallback={<TabLoadingSpinner name="Products" />}>
-              <ModernProductsTab />
-            </Suspense>
+            <ModernProductsTab />
           </TabWithErrorBoundary>
         )
 
       case 'orders':
         return (
           <TabWithErrorBoundary name="Orders">
-            <Suspense fallback={<TabLoadingSpinner name="Orders" />}>
-              <OrdersTab />
-            </Suspense>
+            <OrdersTab />
           </TabWithErrorBoundary>
         )
 
       case 'customers':
         return (
           <TabWithErrorBoundary name="Customers">
-            <Suspense fallback={<TabLoadingSpinner name="Customers" />}>
-              <CustomersTab />
-            </Suspense>
+            <CustomersTab />
           </TabWithErrorBoundary>
         )
 
       case 'custom':
         return (
           <TabWithErrorBoundary name="Custom Orders">
-            <Suspense fallback={<TabLoadingSpinner name="Custom Orders" />}>
-              <CustomOrdersTab />
-            </Suspense>
+            <CustomOrdersTab />
           </TabWithErrorBoundary>
         )
 
       case 'content':
         return (
           <TabWithErrorBoundary name="Content Management">
-            <Suspense fallback={<TabLoadingSpinner name="Content Management" />}>
-              <ContentTab />
-            </Suspense>
+            <ContentTab />
           </TabWithErrorBoundary>
         )
 

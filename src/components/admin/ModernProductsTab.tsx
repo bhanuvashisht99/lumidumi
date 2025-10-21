@@ -2,6 +2,7 @@
 
 // Fixed syntax errors
 import { useState, useEffect, useCallback } from 'react'
+import { usePreloadedData } from '@/contexts/DataPreloadContext'
 import { getAllProducts, getCategories } from '@/lib/database'
 import ModernImageUpload from '@/components/ModernImageUpload'
 import ColorVariants from '@/components/ColorVariants'
@@ -35,10 +36,12 @@ interface Category {
 }
 
 export default function ModernProductsTab() {
+  // Use preloaded data
+  const { data } = usePreloadedData()
+  const products = data?.products || []
+  const categories = data?.categories || []
+
   // State management
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')

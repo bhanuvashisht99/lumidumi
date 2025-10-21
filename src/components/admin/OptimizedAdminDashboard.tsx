@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase'
+import { usePreloadedStats } from '@/contexts/DataPreloadContext'
 import OptimizedAdminTabs from './OptimizedAdminTabs'
 
 interface DashboardStats {
@@ -15,87 +15,14 @@ interface DashboardStats {
 export default function OptimizedAdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
   const { user } = useAuth()
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProducts: 0,
-    totalOrders: 0,
-    revenue: 0,
-    customRequests: 0
-  })
-  const [statsLoading, setStatsLoading] = useState(true)
-  const [statsError, setStatsError] = useState<string | null>(null)
+  const preloadedStats = usePreloadedStats()
 
-  // Optimized stats fetching with error handling
-  const fetchStats = useCallback(async () => {
-    if (!user) return
+  // Use preloaded stats and add custom requests (can be enhanced later)
+  const stats = useMemo(() => ({
+    ...preloadedStats,
+    customRequests: 0 // This can be loaded separately if needed
+  }), [preloadedStats])
 
-    try {
-      setStatsLoading(true)
-      setStatsError(null)
-
-      // Fetch all stats in parallel with timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-      const [productsRes, ordersRes, customOrdersRes] = await Promise.allSettled([
-        supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true)
-          .abortSignal(controller.signal),
-
-        supabase
-          .from('orders')
-          .select('total_amount', { count: 'exact' })
-          .abortSignal(controller.signal),
-
-        supabase
-          .from('custom_orders')
-          .select('*', { count: 'exact', head: true })
-          .abortSignal(controller.signal)
-      ])
-
-      clearTimeout(timeoutId)
-
-      let totalProducts = 0
-      let totalOrders = 0
-      let revenue = 0
-      let customRequests = 0
-
-      // Handle products result
-      if (productsRes.status === 'fulfilled' && !productsRes.value.error) {
-        totalProducts = productsRes.value.count || 0
-      }
-
-      // Handle orders result
-      if (ordersRes.status === 'fulfilled' && !ordersRes.value.error) {
-        totalOrders = ordersRes.value.count || 0
-        revenue = ordersRes.value.data?.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0) || 0
-      }
-
-      // Handle custom orders result
-      if (customOrdersRes.status === 'fulfilled' && !customOrdersRes.value.error) {
-        customRequests = customOrdersRes.value.count || 0
-      }
-
-      setStats({
-        totalProducts,
-        totalOrders,
-        revenue,
-        customRequests
-      })
-    } catch (error) {
-      console.error('Error fetching stats:', error)
-      setStatsError('Failed to load dashboard stats')
-    } finally {
-      setStatsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (user) {
-      fetchStats()
-    }
-  }, [user])
 
   // Memoized stats data
   const statsData = useMemo(() => [

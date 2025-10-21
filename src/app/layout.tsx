@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
-import { AppLoadingWrapper } from '@/components/LoadingScreen'
+import AppInitializer from '@/components/AppInitializer'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartProvider } from '@/contexts/CartContext'
+import { DataPreloadProvider } from '@/contexts/DataPreloadContext'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -28,13 +29,15 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <AuthProvider>
           <CartProvider>
-            <AppLoadingWrapper>
-              <Navbar />
-              <main className="pt-20">
-                {children}
-              </main>
-              <Footer />
-            </AppLoadingWrapper>
+            <DataPreloadProvider>
+              <AppInitializer>
+                <Navbar />
+                <main className="pt-20">
+                  {children}
+                </main>
+                <Footer />
+              </AppInitializer>
+            </DataPreloadProvider>
           </CartProvider>
         </AuthProvider>
       </body>
