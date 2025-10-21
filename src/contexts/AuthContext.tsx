@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAdmin(false)
       // Don't cache errors
     }
-  }, [storage])
+  }, [])
 
   const refreshSession = useCallback(async () => {
     try {
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error refreshing session:', error)
     }
-  }, [checkAdminStatus, storage])
+  }, [])
 
   const initializeAuth = useCallback(async () => {
     try {
@@ -225,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [checkAdminStatus, storage])
+  }, [])
 
   useEffect(() => {
     let mounted = true
