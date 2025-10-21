@@ -35,7 +35,7 @@ const DataPreloadContext = createContext<DataPreloadContextType | undefined>(und
 
 export function DataPreloadProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PreloadedData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const loadAllData = async () => {
@@ -43,9 +43,9 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       setError(null)
 
-      console.log('🔄 Starting global data preload...')
+      console.log('🔄 Starting background data preload...')
 
-      // Load all data in parallel for speed
+      // Load critical data first, then everything else in background
       const [
         productsResult,
         categoriesResult,

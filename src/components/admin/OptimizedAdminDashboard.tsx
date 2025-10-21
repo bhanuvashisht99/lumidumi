@@ -15,13 +15,18 @@ interface DashboardStats {
 export default function OptimizedAdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
   const { user } = useAuth()
-  const preloadedStats = usePreloadedStats()
+  const { data, isLoading } = usePreloadedData()
 
-  // Use preloaded stats and add custom requests (can be enhanced later)
-  const stats = useMemo(() => ({
-    ...preloadedStats,
-    customRequests: 0 // This can be loaded separately if needed
-  }), [preloadedStats])
+  // Use preloaded stats, with fallback while loading
+  const stats = useMemo(() => {
+    if (!data) {
+      return { totalProducts: 0, totalOrders: 0, revenue: 0, customRequests: 0 }
+    }
+    return {
+      ...data.stats,
+      customRequests: 0 // This can be loaded separately if needed
+    }
+  }, [data])
 
 
   // Memoized stats data
@@ -58,10 +63,8 @@ export default function OptimizedAdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-charcoal/60">{stat.name}</p>
-                  {statsLoading ? (
+                  {isLoading ? (
                     <div className="animate-pulse bg-gray-200 h-8 w-16 rounded mt-1"></div>
-                  ) : statsError ? (
-                    <p className="text-sm text-red-500">Error</p>
                   ) : (
                     <p className="text-2xl font-bold text-charcoal">{stat.value}</p>
                   )}
