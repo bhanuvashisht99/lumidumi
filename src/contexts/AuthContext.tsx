@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error checking admin status:', error)
       setIsAdmin(false)
     }
-  }, [adminStatusCache, storage])
+  }, [storage])
 
   const refreshSession = useCallback(async () => {
     try {
@@ -190,16 +190,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // No session, clear any stored data
         storage.removeItem('lumidumi_session_info')
-        Object.keys(adminStatusCache).forEach(userId => {
-          storage.removeItem(`admin_status_${userId}`)
-        })
+        setSession(null)
+        setUser(null)
+        setIsAdmin(false)
       }
     } catch (error) {
       console.error('Error initializing auth:', error)
     } finally {
       setLoading(false)
     }
-  }, [checkAdminStatus, storage, adminStatusCache])
+  }, [checkAdminStatus, storage])
 
   useEffect(() => {
     let mounted = true

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import OptimizedAdminTabs from './OptimizedAdminTabs'
 
@@ -15,8 +14,7 @@ interface DashboardStats {
 
 export default function OptimizedAdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
-  const { isAdmin, loading, user } = useAuth()
-  const router = useRouter()
+  const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     totalOrders: 0,
@@ -26,21 +24,9 @@ export default function OptimizedAdminDashboard() {
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
 
-  // Memoized auth check
-  const shouldRedirect = useMemo(() => {
-    return !loading && (!user || !isAdmin)
-  }, [loading, user, isAdmin])
-
-  // Redirect if not authenticated/authorized
-  useEffect(() => {
-    if (shouldRedirect) {
-      router.push('/login')
-    }
-  }, [shouldRedirect, router])
-
   // Optimized stats fetching with error handling
   const fetchStats = useCallback(async () => {
-    if (!user || !isAdmin) return
+    if (!user) return
 
     try {
       setStatsLoading(true)
@@ -103,13 +89,13 @@ export default function OptimizedAdminDashboard() {
     } finally {
       setStatsLoading(false)
     }
-  }, [user, isAdmin])
+  }, [user])
 
   useEffect(() => {
-    if (user && isAdmin && !loading) {
+    if (user) {
       fetchStats()
     }
-  }, [user, isAdmin, loading, fetchStats])
+  }, [user, fetchStats])
 
   // Memoized stats data
   const statsData = useMemo(() => [
@@ -127,31 +113,7 @@ export default function OptimizedAdminDashboard() {
     { id: 'content', name: 'Content', icon: '📝' },
   ], [])
 
-  // Show loading only when first loading auth
-  if (loading && !user) {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
-          <p className="mt-4 text-charcoal">Loading admin dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (shouldRedirect) {
-    return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-charcoal mb-4">Access Denied</h1>
-          <p className="text-charcoal/60 mb-6">You need admin privileges to access this page.</p>
-          <a href="/login" className="btn-primary">
-            Sign In
-          </a>
-        </div>
-      </div>
-    )
-  }
+  // AuthGuard handles loading and auth checks
 
   return (
     <div className="min-h-screen bg-cream-50">
