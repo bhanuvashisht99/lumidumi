@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { usePreloadedStats } from '@/contexts/DataPreloadContext'
+import { usePreloadedStats, usePreloadedData } from '@/contexts/DataPreloadContext'
 import OptimizedAdminTabs from './OptimizedAdminTabs'
 
 interface DashboardStats {
@@ -15,7 +15,7 @@ interface DashboardStats {
 export default function OptimizedAdminDashboard() {
   const [activeTab, setActiveTab] = useState('products')
   const { user } = useAuth()
-  const { data, isLoading } = usePreloadedData()
+  const { data, isLoading, refreshData } = usePreloadedData()
 
   // Use preloaded stats, with fallback while loading
   const stats = useMemo(() => {
@@ -75,17 +75,17 @@ export default function OptimizedAdminDashboard() {
           ))}
         </div>
 
-        {/* Refresh button for stats */}
-        {statsError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <p className="text-red-600">Failed to load dashboard statistics</p>
-              <button onClick={fetchStats} className="btn-secondary text-sm">
-                Retry
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Refresh Data Button */}
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={refreshData}
+            disabled={isLoading}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <span className={isLoading ? 'animate-spin' : ''}>🔄</span>
+            <span>{isLoading ? 'Loading...' : 'Refresh Data'}</span>
+          </button>
+        </div>
 
         {/* Navigation Tabs */}
         <div className="border-b border-cream-200 mb-8">

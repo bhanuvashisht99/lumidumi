@@ -353,7 +353,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearInterval(refreshInterval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [initializeAuth, checkAdminStatus, refreshSession, session, loading, storage])
+  }, [initializeAuth, refreshSession])
 
   const signIn = async (email: string, password: string) => {
     try {

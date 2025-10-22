@@ -175,6 +175,56 @@ export async function getProductBySlug(slug: string) {
   return data
 }
 
+export async function getAllProductsWithImages() {
+  try {
+    // Get products
+    const products = await getAllProducts()
+
+    if (!products || products.length === 0) {
+      return []
+    }
+
+    // For each product, fetch its images and colors
+    const productsWithRelations = await Promise.allSettled(
+      products.map(async (product: any) => {
+        try {
+          // Fetch images and colors in parallel
+          const [imagesResult, colorsResult] = await Promise.allSettled([
+            supabase
+              .from('product_images')
+              .select('*')
+              .eq('product_id', product.id)
+              .order('sort_order', { ascending: true }),
+            supabase
+              .from('product_colors')
+              .select('*')
+              .eq('product_id', product.id)
+              .order('created_at', { ascending: true })
+          ])
+
+          const images = imagesResult.status === 'fulfilled' && imagesResult.value.data ? imagesResult.value.data : []
+          const colors = colorsResult.status === 'fulfilled' && colorsResult.value.data ? colorsResult.value.data : []
+
+          return { ...product, images, colors }
+        } catch (error) {
+          console.warn(`Failed to fetch relations for product ${product.name}:`, error)
+          return { ...product, images: [], colors: [] }
+        }
+      })
+    )
+
+    // Extract successful results
+    const results = productsWithRelations
+      .filter(result => result.status === 'fulfilled')
+      .map(result => (result as PromiseFulfilledResult<any>).value)
+
+    return results
+  } catch (error) {
+    console.error('Error in getAllProductsWithImages:', error)
+    return []
+  }
+}
+
 // Categories
 export async function getCategories() {
   const { data, error } = await supabase

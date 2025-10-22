@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePreloadedData } from '@/contexts/DataPreloadContext'
 import { getAllProducts, getCategories } from '@/lib/database'
+import { authenticatedFetch, getAuthHeaders } from '@/lib/apiAuth'
 import ModernImageUpload from '@/components/ModernImageUpload'
 import ColorVariants from '@/components/ColorVariants'
 
@@ -14,6 +15,7 @@ interface Product {
   price: number
   stock_quantity: number
   category_id?: string
+  image_url?: string
   weight?: number
   burn_time?: number
   scent_description?: string
@@ -37,7 +39,7 @@ interface Category {
 
 export default function ModernProductsTab() {
   // Use preloaded data
-  const { data } = usePreloadedData()
+  const { data, isLoading, refreshData } = usePreloadedData()
   const products = data?.products || []
   const categories = data?.categories || []
 
@@ -55,85 +57,6 @@ export default function ModernProductsTab() {
   const [formColors, setFormColors] = useState<any[]>([])
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true)
-      console.log('Starting products fetch...')
-
-      // Fetch products with related images and colors
-      const data = await getAllProducts()
-      console.log('Got products data:', data?.length || 0, 'products')
-
-      // If we have no products, just set empty array and finish
-      if (!data || data.length === 0) {
-        console.log('No products found, setting empty array')
-        setProducts([])
-        return
-      }
-
-      // For each product, fetch its images and colors with timeout and error handling
-      const productsWithRelations = await Promise.all(
-        data.map(async (product: Product) => {
-          try {
-            // Create timeout promises for each request
-            const timeoutMs = 5000 // 5 second timeout
-
-            const fetchWithTimeout = async (url: string) => {
-              const controller = new AbortController()
-              const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
-              try {
-                const response = await fetch(url, { signal: controller.signal })
-                clearTimeout(timeoutId)
-                return response.ok ? await response.json() : []
-              } catch (error) {
-                clearTimeout(timeoutId)
-                console.warn(`Failed to fetch ${url}:`, error)
-                return []
-              }
-            }
-
-            // Fetch images and colors with timeout
-            const [images, colors] = await Promise.all([
-              fetchWithTimeout(`/api/admin/products/${product.id}/images`),
-              fetchWithTimeout(`/api/admin/products/${product.id}/colors`)
-            ])
-
-            console.log(`Product ${product.name}: ${images.length} images, ${colors.length} colors`)
-            return { ...product, images, colors }
-          } catch (error) {
-            console.warn(`Failed to fetch relations for product ${product.id}:`, error)
-            return { ...product, images: [], colors: [] }
-          }
-        })
-      )
-
-      console.log('Successfully loaded', productsWithRelations.length, 'products with relations')
-      setProducts(productsWithRelations)
-    } catch (error) {
-      console.error('Error fetching products:', error)
-      alert('Error loading products. Please refresh the page.')
-      // Set empty products array on error
-      setProducts([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const data = await getCategories()
-      setCategories(data)
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }, [])
-
-  // Load data on mount
-  useEffect(() => {
-    fetchProducts()
-    fetchCategories()
-  }, [])
 
   // Filter products based on search and category
   const filteredProducts = products.filter(product => {
@@ -195,6 +118,10 @@ export default function ModernProductsTab() {
       featured: product.featured,
       slug: (product as any).slug || ''
     }
+
+    console.log('🎨 Opening edit form for product:', product.name)
+    console.log('📸 Product images:', product.images)
+    console.log('🎨 Product colors:', product.colors)
 
     setFormData(cleanFormData)
     setFormImages(product.images || [])
@@ -313,9 +240,8 @@ export default function ModernProductsTab() {
       }
 
       console.log(`🚀 Sending ${method} request to ${url}`)
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
@@ -331,7 +257,7 @@ export default function ModernProductsTab() {
       console.log('✅ Product saved successfully:', result)
 
       // Refresh the products list without closing the form
-      await fetchProducts()
+      await refreshData()
 
       // Show success indicator for 3 seconds
       setSaveSuccess(true)
@@ -348,15 +274,14 @@ export default function ModernProductsTab() {
     if (!confirm('Are you sure you want to delete this product?')) return
 
     try {
-      const response = await fetch('/api/admin/products', {
+      const response = await authenticatedFetch('/api/admin/products', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: productId })
       })
 
       if (!response.ok) throw new Error('Failed to delete product')
 
-      await fetchProducts()
+      await refreshData()
       alert('Product deleted successfully!')
     } catch (error) {
       console.error('Error deleting product:', error)
@@ -386,7 +311,7 @@ export default function ModernProductsTab() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cream-300 mx-auto mb-4"></div>
@@ -568,6 +493,7 @@ function ProductCard({
   onDelete: () => void
 }) {
   const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0]
+  const imageUrl = primaryImage?.url || product.image_url
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border transition-all ${
@@ -582,9 +508,9 @@ function ProductCard({
           className="absolute top-3 left-3 z-10 rounded border-cream-200 text-cream-300 focus:ring-cream-300"
         />
 
-        {primaryImage ? (
+        {imageUrl ? (
           <img
-            src={primaryImage.url}
+            src={imageUrl}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -722,6 +648,7 @@ function ProductTable({
         <tbody className="bg-white divide-y divide-cream-100">
           {products.map(product => {
             const primaryImage = product.images?.find(img => img.is_primary) || product.images?.[0]
+            const imageUrl = primaryImage?.url || product.image_url
 
             return (
               <tr key={product.id} className="hover:bg-cream-25">
@@ -736,8 +663,8 @@ function ProductTable({
                 <td className="px-6 py-4">
                   <div className="flex items-center">
                     <div className="w-12 h-12 bg-cream-100 rounded-lg flex items-center justify-center mr-4">
-                      {primaryImage ? (
-                        <img src={primaryImage.url} alt={product.name} className="w-12 h-12 rounded-lg object-cover" />
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={product.name} className="w-12 h-12 rounded-lg object-cover" />
                       ) : (
                         '🕯️'
                       )}

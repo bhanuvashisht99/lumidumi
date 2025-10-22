@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { getAllProducts } from '@/lib/database'
+import { getAllProducts, getAllProductsWithImages } from '@/lib/database'
 import { supabase } from '@/lib/supabase'
 
 interface PreloadedData {
@@ -53,17 +53,17 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
         customersResult,
         contentResults
       ] = await Promise.allSettled([
-        // Products
-        getAllProducts().catch(() => []),
+        // Products with images and colors
+        getAllProductsWithImages().catch(() => []),
 
         // Categories
-        supabase.from('categories').select('*').then(res => res.data || []),
+        supabase.from('categories').select('*').then((res: any) => res.data || []),
 
-        // Orders (for stats)
-        supabase.from('orders').select('total_amount').then(res => res.data || []),
+        // Orders (for stats) - fallback to empty array since orders table doesn't exist yet
+        Promise.resolve([]),
 
         // Customers (for stats)
-        supabase.from('profiles').select('*').then(res => res.data || []),
+        supabase.from('profiles').select('*').then((res: any) => res.data || []),
 
         // Content sections
         Promise.allSettled([
@@ -95,7 +95,7 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
       const stats = {
         totalProducts: products.length,
         totalOrders: orders.length,
-        revenue: orders.reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0),
+        revenue: 0, // No orders table yet, so revenue is 0
         totalCustomers: customers.length
       }
 
