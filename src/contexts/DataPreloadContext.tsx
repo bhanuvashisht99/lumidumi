@@ -156,6 +156,20 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
     }
   }, [authLoading])
 
+  // Listen for auth sign-out events to clear data
+  useEffect(() => {
+    const handleAuthEvents = (event: MessageEvent) => {
+      if (event.data.type === 'AUTH_SIGNED_OUT') {
+        console.log('🔄 Auth signed out, clearing preloaded data')
+        setData(null)
+        setError(null)
+      }
+    }
+
+    window.addEventListener('message', handleAuthEvents)
+    return () => window.removeEventListener('message', handleAuthEvents)
+  }, [])
+
   const value = {
     data,
     isLoading,

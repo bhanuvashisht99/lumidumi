@@ -1,11 +1,21 @@
 'use client'
 
 import { useEffect } from 'react'
-import { registerServiceWorker } from '@/lib/serviceWorker'
 
 export default function ServiceWorkerRegistration() {
   useEffect(() => {
-    registerServiceWorker()
+    // Temporarily disable service worker to fix auth conflicts
+    console.log('Service Worker registration disabled to fix auth issues')
+
+    // Clean up any existing service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+          console.log('Unregistering existing service worker')
+          registration.unregister()
+        })
+      })
+    }
   }, [])
 
   return null

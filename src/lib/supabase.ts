@@ -6,7 +6,20 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholde
 // Singleton pattern to ensure only one client instance
 let _supabase: any = null
 
+// Ensure we only create ONE instance globally
+if (typeof window !== 'undefined') {
+  // Store on window to prevent multiple instances across chunks
+  if (!(window as any).__supabase_client) {
+    (window as any).__supabase_client = null
+  }
+}
+
 export const supabase = (() => {
+  // Check window global first
+  if (typeof window !== 'undefined' && (window as any).__supabase_client) {
+    return (window as any).__supabase_client
+  }
+
   if (!_supabase) {
     _supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -16,7 +29,7 @@ export const supabase = (() => {
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'sb-lumidumi-auth-token',
         flowType: 'pkce',
-        debug: process.env.NODE_ENV === 'development'
+        debug: false, // Disable debug to reduce console noise
       },
       global: {
         headers: {
@@ -30,6 +43,11 @@ export const supabase = (() => {
         }
       }
     })
+
+    // Store globally to prevent multiple instances
+    if (typeof window !== 'undefined') {
+      (window as any).__supabase_client = _supabase
+    }
   }
   return _supabase
 })()

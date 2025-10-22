@@ -305,6 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           case 'SIGNED_IN':
           case 'TOKEN_REFRESHED':
             if (currentSession) {
+              console.log('🔓 User signed in:', currentSession.user.email)
               setSession(currentSession)
               setUser(currentSession.user)
 
@@ -367,6 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             break
 
           case 'SIGNED_OUT':
+            console.log('🚪 User signed out, clearing auth state')
             setSession(null)
             setUser(null)
             setIsAdmin(false)
@@ -378,6 +380,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             Object.keys(adminStatusCacheRef.current).forEach(userId => {
               storage.removeItem(`admin_status_${userId}`)
             })
+
+            // Force refresh data context to clear stale data
+            if (typeof window !== 'undefined') {
+              window.postMessage({ type: 'AUTH_SIGNED_OUT' }, '*')
+            }
             break
 
           case 'PASSWORD_RECOVERY':
