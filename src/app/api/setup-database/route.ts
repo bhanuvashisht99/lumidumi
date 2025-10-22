@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Use service role key for admin operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Starting database setup...')
 
     // Create custom_orders table
-    const { error: tableError } = await supabase.rpc('exec_sql', {
+    const { error: tableError } = await supabaseAdmin.rpc('exec_sql', {
       sql: `
         -- Create custom_orders table
         CREATE TABLE IF NOT EXISTS custom_orders (
@@ -37,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (tableError) {
       console.error('Error creating table:', tableError)
       // Try alternative approach - direct SQL execution
-      const { error: createError } = await supabase
+      const { error: createError } = await supabaseAdmin
         .from('custom_orders')
         .select('id')
         .limit(1)
@@ -82,7 +76,7 @@ CREATE POLICY "Anonymous users can create custom orders" ON custom_orders FOR IN
       status: 'pending'
     }
 
-    const { data, error: insertError } = await supabase
+    const { data, error: insertError } = await supabaseAdmin
       .from('custom_orders')
       .insert([testData])
       .select()
@@ -97,7 +91,7 @@ CREATE POLICY "Anonymous users can create custom orders" ON custom_orders FOR IN
 
     // Delete the test record
     if (data && data[0]) {
-      await supabase
+      await supabaseAdmin
         .from('custom_orders')
         .delete()
         .eq('id', data[0].id)

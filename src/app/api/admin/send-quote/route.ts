@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
 import nodemailer from 'nodemailer'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 // Configure nodemailer transporter (conditionally)
 let transporter: any = null
@@ -55,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the custom order with quote details
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('custom_orders')
       .update({
         quoted_price: quotedPrice,

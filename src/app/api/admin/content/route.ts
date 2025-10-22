@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Use service role key for admin operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     if (section) {
       // Get specific section
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('site_content')
         .select('*')
         .eq('section', section)
@@ -27,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: data || null })
     } else {
       // Get all content
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('site_content')
         .select('*')
         .order('section')
@@ -59,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert content (update if exists, insert if not)
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('site_content')
       .upsert({
         section,

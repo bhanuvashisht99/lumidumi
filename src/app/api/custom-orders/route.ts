@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Use service role key for admin operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert custom order using service role (bypasses RLS)
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('custom_orders')
       .insert([customOrderData])
       .select()

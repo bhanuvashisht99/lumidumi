@@ -259,6 +259,9 @@ export default function ModernProductsTab() {
       // Refresh the products list without closing the form
       await refreshData()
 
+      // Notify other tabs/windows about the product update
+      window.postMessage({ type: 'PRODUCTS_UPDATED' }, '*')
+
       // Show success indicator for 3 seconds
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 3000)
@@ -282,6 +285,10 @@ export default function ModernProductsTab() {
       if (!response.ok) throw new Error('Failed to delete product')
 
       await refreshData()
+
+      // Notify other tabs/windows about the product update
+      window.postMessage({ type: 'PRODUCTS_UPDATED' }, '*')
+
       alert('Product deleted successfully!')
     } catch (error) {
       console.error('Error deleting product:', error)

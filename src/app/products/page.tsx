@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getProducts, Product } from '@/lib/database'
+import { Product } from '@/lib/database'
 import { useCart } from '@/contexts/CartContext'
+import { usePreloadedData } from '@/contexts/DataPreloadContext'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -162,175 +163,19 @@ function ProductCard({ product, images, hasColors, onClick }: {
 
 export default function ProductsPage() {
   const router = useRouter()
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true)
-      const allProducts = await getProducts()
+  // Use preloaded data instead of separate loading
+  const { data, isLoading, refreshData } = usePreloadedData()
+  const products = data?.products || []
 
-      // Load products first, then lazy load images and colors
-      setProducts(allProducts.map((product: any) => ({ ...product, images: [], colors: [] })))
-      setLoading(false)
-
-      // Batch load images and colors for visible products (first 6)
-      const visibleProducts = allProducts.slice(0, 6)
-      const productsWithDetails = await Promise.all(
-        visibleProducts.map(async (product: Product) => {
-          try {
-            // Fetch product images and colors in parallel
-            const [imagesResponse, colorsResponse] = await Promise.all([
-              fetch(`/api/admin/products/${product.id}/images`),
-              fetch(`/api/admin/products/${product.id}/colors`)
-            ])
-
-            const images = imagesResponse.ok ? await imagesResponse.json() : []
-            const colors = colorsResponse.ok ? await colorsResponse.json() : []
-
-            return { ...product, images, colors }
-          } catch (error) {
-            console.error(`Error fetching details for product ${product.id}:`, error)
-            return { ...product, images: [], colors: [] }
-          }
-        })
-      )
-
-      // Update products with details
-      setProducts(prevProducts =>
-        prevProducts.map(product => {
-          const updatedProduct = productsWithDetails.find(p => p.id === product.id)
-          return updatedProduct || product
-        })
-      )
-
-      // Load remaining products in background
-      if (allProducts.length > 6) {
-        const remainingProducts = allProducts.slice(6)
-        setTimeout(async () => {
-          const remainingWithDetails = await Promise.all(
-            remainingProducts.map(async (product: Product) => {
-              try {
-                const [imagesResponse, colorsResponse] = await Promise.all([
-                  fetch(`/api/admin/products/${product.id}/images`),
-                  fetch(`/api/admin/products/${product.id}/colors`)
-                ])
-
-                const images = imagesResponse.ok ? await imagesResponse.json() : []
-                const colors = colorsResponse.ok ? await colorsResponse.json() : []
-
-                return { ...product, images, colors }
-              } catch (error) {
-                console.error(`Error fetching details for product ${product.id}:`, error)
-                return { ...product, images: [], colors: [] }
-              }
-            })
-          )
-
-          setProducts(prevProducts =>
-            prevProducts.map(product => {
-              const updatedProduct = remainingWithDetails.find(p => p.id === product.id)
-              return updatedProduct || product
-            })
-          )
-        }, 100)
-      }
-    } catch (error) {
-      console.error('Error loading products:', error)
-      // Fallback to sample products
-      setProducts([
-          {
-            id: '1',
-            name: 'Vanilla Dreams',
-            price: 899,
-            scent_description: 'Warm vanilla with hints of caramel',
-            description: 'Handcrafted vanilla candle with hints of caramel and warm spices. Perfect for creating a cozy atmosphere.',
-            stock_quantity: 15,
-            is_active: true,
-            featured: true,
-            slug: 'vanilla-dreams',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            name: 'Lavender Bliss',
-            price: 799,
-            scent_description: 'Calming lavender for relaxation',
-            description: 'Calming lavender candle infused with natural lavender essential oils for relaxation and stress relief.',
-            stock_quantity: 20,
-            is_active: true,
-            featured: true,
-            slug: 'lavender-bliss',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '3',
-            name: 'Citrus Burst',
-            price: 749,
-            scent_description: 'Fresh citrus energizing blend',
-            description: 'Energizing citrus blend with notes of orange, lemon, and grapefruit to brighten any space.',
-            stock_quantity: 18,
-            is_active: true,
-            featured: true,
-            slug: 'citrus-burst',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '4',
-            name: 'Sandalwood Serenity',
-            price: 999,
-            scent_description: 'Rich sandalwood with earthy notes',
-            description: 'Rich sandalwood candle with earthy undertones, perfect for meditation and peaceful moments.',
-            stock_quantity: 12,
-            is_active: true,
-            featured: true,
-            slug: 'sandalwood-serenity',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '5',
-            name: 'Rose Garden',
-            price: 899,
-            scent_description: 'Elegant rose with floral notes',
-            description: 'Elegant rose-scented candle with a delicate floral fragrance, ideal for romantic settings.',
-            stock_quantity: 14,
-            is_active: true,
-            featured: false,
-            slug: 'rose-garden',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '6',
-            name: 'Ocean Breeze',
-            price: 849,
-            scent_description: 'Fresh ocean and marine scents',
-            description: 'Fresh ocean-inspired candle with marine and aquatic notes for a refreshing ambiance.',
-            stock_quantity: 16,
-            is_active: true,
-            featured: false,
-            slug: 'ocean-breeze',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ])
-    }
-  }
-
+  // Listen for product updates from admin panel and refresh preloaded data
   useEffect(() => {
-    loadProducts()
-
-    // Listen for product updates from admin panel
     const handleProductUpdate = (event: MessageEvent) => {
       if (event.data.type === 'PRODUCTS_UPDATED') {
-        console.log('Received product update notification, refreshing products...')
-        loadProducts()
+        console.log('Received product update notification, refreshing preloaded data...')
+        refreshData()
       }
     }
 
@@ -339,7 +184,7 @@ export default function ProductsPage() {
     return () => {
       window.removeEventListener('message', handleProductUpdate)
     }
-  }, [])
+  }, [refreshData])
 
   const categories = [
     { id: 'all', name: 'All Products' },
@@ -382,7 +227,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Products Grid */}
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="card animate-pulse">
@@ -422,7 +267,7 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {filteredProducts.length === 0 && !loading && (
+        {filteredProducts.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <p className="text-charcoal/60 text-lg">No products found in this category.</p>
           </div>
