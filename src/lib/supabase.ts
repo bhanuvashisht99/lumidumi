@@ -15,11 +15,18 @@ export const supabase = (() => {
         detectSessionInUrl: true,
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'sb-lumidumi-auth-token',
-        flowType: 'pkce'
+        flowType: 'pkce',
+        debug: process.env.NODE_ENV === 'development'
       },
       global: {
         headers: {
           'X-Client-Info': 'lumidumi-web'
+        }
+      },
+      // Production specific settings
+      realtime: {
+        params: {
+          eventsPerSecond: 2
         }
       }
     })

@@ -170,16 +170,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const initializeAuth = useCallback(async () => {
     try {
+      console.log('🔐 Initializing auth...', window.location.hostname)
+
       // Get current session
       const { data: { session: currentSession }, error } = await supabase.auth.getSession()
 
       if (error) {
-        console.error('Error getting session:', error)
+        console.error('❌ Error getting session:', error)
+
+        // Try to recover from session storage if available
+        if (typeof window !== 'undefined') {
+          try {
+            const sessionInfo = storage.getItem('lumidumi_session_info')
+            if (sessionInfo) {
+              const parsed = JSON.parse(sessionInfo)
+              console.log('📦 Found stored session info:', parsed.email)
+
+              // Attempt session refresh
+              const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
+              if (refreshedSession) {
+                console.log('✅ Session recovered from storage')
+                setSession(refreshedSession)
+                setUser(refreshedSession.user)
+                await checkAdminStatus(refreshedSession.user)
+                setLoading(false)
+                return
+              }
+            }
+          } catch (recoveryError) {
+            console.log('⚠️ Session recovery failed:', recoveryError)
+          }
+        }
+
         setLoading(false)
         return
       }
 
       if (currentSession) {
+        console.log('✅ Found active session:', currentSession.user.email)
         setSession(currentSession)
         setUser(currentSession.user)
 
@@ -214,7 +242,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           last_refresh: Date.now()
         }))
       } else {
+        console.log('🔍 No session found, checking for auth recovery options...')
+
+        // Check if we're returning from an auth redirect
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search)
+          const accessToken = urlParams.get('access_token')
+          const refreshToken = urlParams.get('refresh_token')
+
+          if (accessToken && refreshToken) {
+            console.log('🔗 Found auth tokens in URL, attempting session recovery...')
+            try {
+              const { data: { session: urlSession }, error: urlError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+              })
+
+              if (!urlError && urlSession) {
+                console.log('✅ Session recovered from URL tokens')
+                setSession(urlSession)
+                setUser(urlSession.user)
+                await checkAdminStatus(urlSession.user)
+
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname)
+                return
+              }
+            } catch (urlRecoveryError) {
+              console.log('⚠️ URL session recovery failed:', urlRecoveryError)
+            }
+          }
+        }
+
         // No session, clear any stored data
+        console.log('🚪 No valid session found, clearing auth state')
         storage.removeItem('lumidumi_session_info')
         setSession(null)
         setUser(null)

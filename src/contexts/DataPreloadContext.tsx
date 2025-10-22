@@ -48,13 +48,12 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
       console.log('🔄 Starting background data preload...', 'Auth loading:', authLoading)
 
       // Load critical data first, then everything else in background
-      const [
-        productsResult,
-        categoriesResult,
-        ordersResult,
-        customersResult,
-        contentResults
-      ] = await Promise.allSettled([
+      // Add timeout for production to handle slow networks
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Data loading timeout')), 30000) // 30 second timeout
+      })
+
+      const dataPromise = Promise.allSettled([
         // Products with images and colors
         getAllProductsWithImages().catch(() => []),
 
@@ -76,6 +75,14 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
           fetch('/api/admin/content?section=footer').then(res => res.ok ? res.json() : { data: null })
         ])
       ])
+
+      const [
+        productsResult,
+        categoriesResult,
+        ordersResult,
+        customersResult,
+        contentResults
+      ] = await Promise.race([dataPromise, timeoutPromise]) as any[]
 
       // Extract results
       const products = productsResult.status === 'fulfilled' ? productsResult.value : []
@@ -121,7 +128,18 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
 
     } catch (err) {
       console.error('❌ Global data preload failed:', err)
-      setError('Failed to load application data')
+
+      // In production, be more specific about errors
+      if (process.env.NODE_ENV === 'production') {
+        // Check if it's a network error
+        if (err instanceof TypeError && err.message.includes('fetch')) {
+          setError('Network connection issue - please check your internet connection')
+        } else {
+          setError('Unable to load data - please refresh the page')
+        }
+      } else {
+        setError('Failed to load application data')
+      }
     } finally {
       setIsLoading(false)
     }
