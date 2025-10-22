@@ -299,7 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event: any, currentSession: any) => {
         if (!mounted) return
 
-        console.log('Auth event:', event)
+        console.log('Auth event:', event, 'for user:', currentSession?.user?.email || 'none')
 
         switch (event) {
           case 'SIGNED_IN':

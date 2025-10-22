@@ -3,54 +3,62 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-// Singleton pattern to ensure only one client instance
-let _supabase: any = null
-
-// Ensure we only create ONE instance globally
-if (typeof window !== 'undefined') {
-  // Store on window to prevent multiple instances across chunks
-  if (!(window as any).__supabase_client) {
-    (window as any).__supabase_client = null
-  }
+// Use a lazy initialization approach
+declare global {
+  var __lumidumi_supabase_client: any
 }
 
-export const supabase = (() => {
-  // Check window global first
-  if (typeof window !== 'undefined' && (window as any).__supabase_client) {
-    return (window as any).__supabase_client
+let _client: any = null
+
+function createSupabaseClient() {
+  if (typeof globalThis !== 'undefined' && globalThis.__lumidumi_supabase_client) {
+    return globalThis.__lumidumi_supabase_client
   }
 
-  if (!_supabase) {
-    _supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'sb-lumidumi-auth-token',
-        flowType: 'pkce',
-        debug: false, // Disable debug to reduce console noise
-      },
-      global: {
-        headers: {
-          'X-Client-Info': 'lumidumi-web'
-        }
-      },
-      // Production specific settings
-      realtime: {
-        params: {
-          eventsPerSecond: 2
-        }
+  console.log('🔧 Creating new Supabase client instance')
+
+  const client = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false, // Disable to prevent conflicts
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'sb-lumidumi-auth-token',
+      flowType: 'pkce',
+      debug: false,
+    },
+    global: {
+      headers: {
+        'X-Client-Info': 'lumidumi-web'
       }
-    })
-
-    // Store globally to prevent multiple instances
-    if (typeof window !== 'undefined') {
-      (window as any).__supabase_client = _supabase
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 2
+      }
     }
+  })
+
+  // Store globally
+  if (typeof globalThis !== 'undefined') {
+    globalThis.__lumidumi_supabase_client = client
   }
-  return _supabase
-})()
+  if (typeof window !== 'undefined') {
+    (window as any).__lumidumi_supabase_client = client
+  }
+
+  _client = client
+  return client
+}
+
+export const supabase = new Proxy({} as any, {
+  get(target, prop) {
+    if (!_client) {
+      _client = createSupabaseClient()
+    }
+    return _client[prop]
+  }
+})
 
 // Admin client for server-side operations (singleton)
 let _supabaseAdmin: any = null

@@ -38,14 +38,19 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PreloadedData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { loading: authLoading } = useAuth()
+  const { loading: authLoading, user, session } = useAuth()
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   const loadAllData = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      console.log('🔄 Starting background data preload...', 'Auth loading:', authLoading)
+      console.log('🔄 Starting data preload...', {
+        authLoading,
+        userEmail: user?.email || 'anonymous',
+        hasAuth: !!user
+      })
 
       // Load critical data first, then everything else in background
       // Add timeout for production to handle slow networks
@@ -84,11 +89,19 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
         contentResults
       ] = await Promise.race([dataPromise, timeoutPromise]) as any[]
 
-      // Extract results
+      // Extract results with detailed logging
       const products = productsResult.status === 'fulfilled' ? productsResult.value : []
       const categories = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
       const orders = ordersResult.status === 'fulfilled' ? ordersResult.value : []
       const customers = customersResult.status === 'fulfilled' ? customersResult.value : []
+
+      console.log('📊 Data load results:', {
+        products: `${products.length} products`,
+        categories: `${categories.length} categories`,
+        orders: `${orders.length} orders`,
+        customers: `${customers.length} customers`,
+        productsError: productsResult.status === 'rejected' ? productsResult.reason : null
+      })
 
       // Process content
       const contentSections = contentResults.status === 'fulfilled' ? contentResults.value : []
@@ -150,11 +163,13 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Wait for auth to complete before loading data
-    if (!authLoading) {
+    // Wait for auth to complete and ensure we only initialize once
+    if (!authLoading && !hasInitialized) {
+      console.log('🚀 Auth ready, initializing data load. User:', user?.email || 'anonymous')
+      setHasInitialized(true)
       loadAllData()
     }
-  }, [authLoading])
+  }, [authLoading, hasInitialized, user])
 
   // Listen for auth sign-out events to clear data
   useEffect(() => {
