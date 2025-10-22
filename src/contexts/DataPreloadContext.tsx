@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { getAllProducts, getAllProductsWithImages } from '@/lib/database'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface PreloadedData {
   products: any[]
@@ -37,13 +38,14 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PreloadedData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { loading: authLoading } = useAuth()
 
   const loadAllData = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      console.log('🔄 Starting background data preload...')
+      console.log('🔄 Starting background data preload...', 'Auth loading:', authLoading)
 
       // Load critical data first, then everything else in background
       const [
@@ -130,8 +132,11 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    loadAllData()
-  }, [])
+    // Wait for auth to complete before loading data
+    if (!authLoading) {
+      loadAllData()
+    }
+  }, [authLoading])
 
   const value = {
     data,

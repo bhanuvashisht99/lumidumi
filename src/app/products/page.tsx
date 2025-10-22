@@ -167,8 +167,18 @@ export default function ProductsPage() {
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
   // Use preloaded data instead of separate loading
-  const { data, isLoading, refreshData } = usePreloadedData()
+  const { data, isLoading, refreshData, error } = usePreloadedData()
   const products = data?.products || []
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Products page - data state:', {
+      hasData: !!data,
+      productsCount: products.length,
+      isLoading,
+      error
+    })
+  }, [data, products, isLoading, error])
 
   // Listen for product updates from admin panel and refresh preloaded data
   useEffect(() => {
@@ -269,7 +279,19 @@ export default function ProductsPage() {
 
         {filteredProducts.length === 0 && !isLoading && (
           <div className="text-center py-12">
-            <p className="text-charcoal/60 text-lg">No products found in this category.</p>
+            {error ? (
+              <div className="space-y-4">
+                <p className="text-red-600 text-lg">Failed to load products</p>
+                <button
+                  onClick={refreshData}
+                  className="btn-primary"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            ) : (
+              <p className="text-charcoal/60 text-lg">No products found in this category.</p>
+            )}
           </div>
         )}
       </div>

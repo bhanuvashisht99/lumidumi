@@ -14,7 +14,7 @@ export const supabase = (() => {
         persistSession: true,
         detectSessionInUrl: true,
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'lumidumi-auth-token',
+        storageKey: 'sb-lumidumi-auth-token',
         flowType: 'pkce'
       },
       global: {
