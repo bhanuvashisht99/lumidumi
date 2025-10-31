@@ -8,8 +8,11 @@ import { useCart } from '@/contexts/CartContext'
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { isAdmin, user, signOut } = useAuth()
-  const { getTotalItems } = useCart()
+  const { user, signOut } = useAuth()
+  const isAdmin = user?.is_admin || false
+  const { getTotalItems, items } = useCart()
+
+  console.log('🛒 [Navbar] Cart items:', items, 'Total count:', getTotalItems())
 
 
   const navigation = [

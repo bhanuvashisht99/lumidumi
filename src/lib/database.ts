@@ -171,7 +171,7 @@ export async function getProductBySlug(slug: string) {
   }
 
   console.log('✅ Returning product data:', data)
-  console.log('🔍 Product ID:', data?.id, 'Type:', typeof data?.id)
+  console.log('🔍 Product ID:', (data as any)?.id, 'Type:', typeof (data as any)?.id)
   return data
 }
 
@@ -257,7 +257,7 @@ export async function getCategory(id: string) {
 
 // Orders
 export async function createOrder(orderData: Partial<Order>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('orders')
     .insert([orderData])
     .select()
@@ -293,7 +293,7 @@ export async function getUserOrders(userId: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('orders')
     .update({ status })
     .eq('id', orderId)
@@ -310,7 +310,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
 
 // Order Items
 export async function createOrderItems(orderItems: Partial<OrderItem>[]) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('order_items')
     .insert(orderItems)
     .select()
@@ -325,7 +325,7 @@ export async function createOrderItems(orderItems: Partial<OrderItem>[]) {
 
 // Custom Orders
 export async function createCustomOrder(customOrderData: Partial<CustomOrder>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('custom_orders')
     .insert([customOrderData])
     .select()
@@ -365,7 +365,7 @@ export async function updateCustomOrderStatus(customOrderId: string, status: str
     updateData.admin_notes = adminNotes
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('custom_orders')
     .update(updateData)
     .eq('id', customOrderId)
@@ -397,7 +397,7 @@ export async function getProfile(userId: string) {
 }
 
 export async function createProfile(profileData: Partial<Profile>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('profiles')
     .insert([profileData])
     .select()
@@ -412,7 +412,7 @@ export async function createProfile(profileData: Partial<Profile>) {
 }
 
 export async function updateProfile(userId: string, profileData: Partial<Profile>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('profiles')
     .update(profileData)
     .eq('id', userId)
@@ -463,7 +463,7 @@ export async function getAllProducts() {
 }
 
 export async function createProduct(productData: Partial<Product>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('products')
     .insert([productData])
     .select()
@@ -478,7 +478,7 @@ export async function createProduct(productData: Partial<Product>) {
 }
 
 export async function updateProduct(productId: string, productData: Partial<Product>) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('products')
     .update(productData)
     .eq('id', productId)
@@ -494,7 +494,7 @@ export async function updateProduct(productId: string, productData: Partial<Prod
 }
 
 export async function deleteProduct(productId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('products')
     .update({ is_active: false })
     .eq('id', productId)

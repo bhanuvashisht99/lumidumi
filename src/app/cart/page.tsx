@@ -6,6 +6,8 @@ import { TrashIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline'
 export default function CartPage() {
   const { items, updateQuantity, removeFromCart, getTotalPrice, getTotalItems } = useCart()
 
+  console.log('🛒 Cart page - items:', items, 'Total items:', getTotalItems())
+
   const formatPrice = (price: number) => {
     return `₹${price.toLocaleString()}`
   }
@@ -208,7 +210,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between">
                   <span className="text-charcoal/70">Delivery Charges</span>
-                  <span className="font-medium">{getTotalPrice() >= 999 ? 'Free' : formatPrice(50)}</span>
+                  <span className="font-medium text-green-600">Free</span>
                 </div>
 
                 <hr className="border-cream-200" />
@@ -216,7 +218,7 @@ export default function CartPage() {
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-cream-300">
-                    {formatPrice(getTotalPrice() + (getTotalPrice() >= 999 ? 0 : 50))}
+                    {formatPrice(getTotalPrice())}
                   </span>
                 </div>
               </div>

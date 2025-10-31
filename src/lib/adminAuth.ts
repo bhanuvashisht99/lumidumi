@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server'
-import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export interface AuthResult {
@@ -8,54 +7,30 @@ export interface AuthResult {
   error?: string
 }
 
-/**
- * Validates admin authentication for API routes
- * Returns user data if authorized, or error details if not
- */
 export async function validateAdminAuth(request: NextRequest): Promise<AuthResult> {
   try {
-    console.log('🔐 Admin auth validation started')
-
-    // Get authorization header
     const authHeader = request.headers.get('authorization')
-    console.log('📋 Authorization header present:', !!authHeader)
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ Missing or invalid authorization header')
       return {
         authorized: false,
-        error: 'Missing or invalid authorization header'
+        error: 'Missing authorization header'
       }
     }
 
-    // Extract token
     const token = authHeader.replace('Bearer ', '')
-    console.log('🎫 Token extracted, length:', token.length)
 
-    // Verify user with Supabase
-    console.log('🔍 Verifying user with Supabase...')
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    // Verify user with admin client
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
 
-    if (userError) {
-      console.error('❌ Supabase user verification error:', userError)
+    if (userError || !user) {
       return {
         authorized: false,
-        error: 'Invalid authentication token'
+        error: 'Invalid token'
       }
     }
 
-    if (!user) {
-      console.log('❌ No user returned from Supabase')
-      return {
-        authorized: false,
-        error: 'Invalid authentication token'
-      }
-    }
-
-    console.log('✅ User verified:', user.id, user.email)
-
-    // Check admin role in profiles table using admin client to bypass RLS
-    console.log('🔍 Checking admin role for user:', user.id, user.email)
+    // Check admin role
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
@@ -63,115 +38,44 @@ export async function validateAdminAuth(request: NextRequest): Promise<AuthResul
       .single()
 
     if (profileError) {
-      console.error('❌ Error fetching user profile:', profileError)
-      console.error('User ID:', user.id)
-      console.error('User email:', user.email)
-      console.error('Profile error details:', JSON.stringify(profileError, null, 2))
-
-      // If profile doesn't exist (PGRST116), create admin profile for this specific user
+      // Auto-create admin profile for specific user
       if (profileError.code === 'PGRST116' && user.email === 'bhanuvashisht99@gmail.com') {
-        console.log('🔧 Creating admin profile for authorized user...')
-
-        // Check if service role key is available
-        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        console.log('🔍 Service role key status:', {
-          isSet: !!serviceRoleKey,
-          length: serviceRoleKey?.length || 0,
-          starts: serviceRoleKey?.substring(0, 10) || 'not-set'
+        await supabaseAdmin.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          role: 'admin',
+          first_name: 'Admin',
+          last_name: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
 
-        if (!serviceRoleKey || serviceRoleKey === 'placeholder-key') {
-          console.error('❌ Service role key not configured properly!')
-          return {
-            authorized: false,
-            error: 'Server configuration error - missing service role key'
-          }
-        }
-
-        try {
-          const profileData = {
-            id: user.id,
-            email: user.email,
-            role: 'admin',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-
-          console.log('📝 Profile data to insert:', profileData)
-          console.log('🛠️ Using supabaseAdmin client for profile creation...')
-
-          const { data: newProfile, error: createError } = await supabaseAdmin
-            .from('profiles')
-            .insert([profileData])
-            .select()
-            .single()
-
-          console.log('📊 Profile creation result:', {
-            hasData: !!newProfile,
-            hasError: !!createError,
-            errorCode: createError?.code,
-            errorMessage: createError?.message
-          })
-
-          if (createError) {
-            console.error('❌ Failed to create admin profile:', createError)
-            console.error('❌ Create error details:', JSON.stringify(createError, null, 2))
-            return {
-              authorized: false,
-              error: 'Failed to create user profile'
-            }
-          }
-
-          console.log('✅ Admin profile created successfully:', newProfile)
-        } catch (insertError) {
-          console.error('❌ Exception during profile creation:', insertError)
-          console.error('❌ Exception stack:', (insertError as Error)?.stack)
-          return {
-            authorized: false,
-            error: 'Exception during profile creation'
-          }
-        }
-
-        return {
-          authorized: true,
-          user
-        }
+        return { authorized: true, user }
       }
 
       return {
         authorized: false,
-        error: 'Failed to verify user permissions'
+        error: 'User profile not found'
       }
     }
-
-    console.log('✅ User profile found:', profile)
 
     if (profile?.role !== 'admin') {
-      console.log('❌ User is not admin. Role:', profile?.role)
       return {
         authorized: false,
-        error: 'Insufficient permissions - admin access required'
+        error: 'Admin access required'
       }
     }
 
-    console.log('✅ Admin access confirmed for user:', user.email)
-    return {
-      authorized: true,
-      user
-    }
+    return { authorized: true, user }
   } catch (error) {
-    console.error('❌ Admin auth validation error:', error)
+    console.error('Admin auth error:', error)
     return {
       authorized: false,
-      error: 'Authentication validation failed'
+      error: 'Authentication failed'
     }
   }
 }
 
-/**
- * Middleware wrapper for admin API routes
- * Usage: export const POST = withAdminAuth(async (request, { user }) => { ... })
- */
 export function withAdminAuth(
   handler: (request: NextRequest, context: { user: any }) => Promise<Response>
 ) {
@@ -180,12 +84,9 @@ export function withAdminAuth(
 
     if (!authResult.authorized) {
       return new Response(
-        JSON.stringify({
-          error: authResult.error,
-          code: 'UNAUTHORIZED'
-        }),
+        JSON.stringify({ error: authResult.error }),
         {
-          status: authResult.error?.includes('permissions') ? 403 : 401,
+          status: authResult.error?.includes('Admin access') ? 403 : 401,
           headers: { 'Content-Type': 'application/json' }
         }
       )

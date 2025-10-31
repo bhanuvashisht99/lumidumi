@@ -91,7 +91,7 @@ export default function CheckoutPage() {
   }
 
   const subtotal = getTotalPrice()
-  const deliveryCharges = subtotal >= 999 ? 0 : 50
+  const deliveryCharges = 0 // Disabled for testing
   const total = subtotal + deliveryCharges
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

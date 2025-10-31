@@ -1,492 +1,282 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { User as SupabaseUser } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { User, Session } from '@supabase/supabase-js'
+import { User } from '@/types'
 
 interface AuthContextType {
   user: User | null
-  session: Session | null
   loading: boolean
-  isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: any }>
-  refreshSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Enhanced local storage with fallbacks
-class SecureStorage {
-  private static instance: SecureStorage
-  private storage: Storage | null = null
-
-  private constructor() {
-    if (typeof window !== 'undefined') {
-      try {
-        // Test localStorage
-        window.localStorage.setItem('test', 'test')
-        window.localStorage.removeItem('test')
-        this.storage = window.localStorage
-      } catch {
-        // Fallback to sessionStorage
-        try {
-          window.sessionStorage.setItem('test', 'test')
-          window.sessionStorage.removeItem('test')
-          this.storage = window.sessionStorage
-        } catch {
-          console.warn('Storage unavailable, authentication state will not persist')
-        }
-      }
-    }
-  }
-
-  static getInstance(): SecureStorage {
-    if (!SecureStorage.instance) {
-      SecureStorage.instance = new SecureStorage()
-    }
-    return SecureStorage.instance
-  }
-
-  setItem(key: string, value: string): void {
-    try {
-      this.storage?.setItem(key, value)
-    } catch (error) {
-      console.warn('Failed to store auth data:', error)
-    }
-  }
-
-  getItem(key: string): string | null {
-    try {
-      return this.storage?.getItem(key) || null
-    } catch (error) {
-      console.warn('Failed to retrieve auth data:', error)
-      return null
-    }
-  }
-
-  removeItem(key: string): void {
-    try {
-      this.storage?.removeItem(key)
-    } catch (error) {
-      console.warn('Failed to remove auth data:', error)
-    }
-  }
-}
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const storage = SecureStorage.getInstance()
-
-  // Use ref for cache to avoid dependency issues
-  const adminStatusCacheRef = useRef<{ [userId: string]: boolean }>({})
-
-  const checkAdminStatus = useCallback(async (currentUser: User | null) => {
-    if (!currentUser || !supabase) {
-      setIsAdmin(false)
-      return
-    }
-
-    // Check memory cache first (fastest)
-    if (adminStatusCacheRef.current[currentUser.id] !== undefined) {
-      const cachedStatus = adminStatusCacheRef.current[currentUser.id]
-      setIsAdmin(cachedStatus)
-      return
-    }
-
-    // Check localStorage cache (faster than DB)
-    const cachedStatus = storage.getItem(`admin_status_${currentUser.id}`)
-    if (cachedStatus) {
-      try {
-        const isAdminCached = JSON.parse(cachedStatus)
-        setIsAdmin(isAdminCached)
-        adminStatusCacheRef.current[currentUser.id] = isAdminCached
-        return
-      } catch {
-        // Invalid cache, continue to database check
-      }
-    }
-
-    // Only hit the database if no cache exists
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', currentUser.id)
-        .single()
-
-      if (!error && profile) {
-        const isAdminUser = profile.role === 'admin'
-        setIsAdmin(isAdminUser)
-
-        // Cache the result in both memory and localStorage
-        adminStatusCacheRef.current[currentUser.id] = isAdminUser
-        storage.setItem(`admin_status_${currentUser.id}`, JSON.stringify(isAdminUser))
-      } else {
-        setIsAdmin(false)
-        // Cache the negative result too
-        adminStatusCacheRef.current[currentUser.id] = false
-        storage.setItem(`admin_status_${currentUser.id}`, JSON.stringify(false))
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error)
-      setIsAdmin(false)
-      // Don't cache errors
-    }
-  }, [])
-
-  const refreshSession = useCallback(async () => {
-    try {
-      const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession()
-
-      if (!error && refreshedSession) {
-        setSession(refreshedSession)
-        setUser(refreshedSession.user)
-        await checkAdminStatus(refreshedSession.user)
-
-        // Store session info for persistence
-        storage.setItem('lumidumi_session_info', JSON.stringify({
-          user_id: refreshedSession.user.id,
-          email: refreshedSession.user.email,
-          last_refresh: Date.now()
-        }))
-      } else if (error) {
-        console.error('Session refresh failed:', error)
-        // Clear invalid session
-        setSession(null)
-        setUser(null)
-        setIsAdmin(false)
-        storage.removeItem('lumidumi_session_info')
-      }
-    } catch (error) {
-      console.error('Error refreshing session:', error)
-    }
-  }, [])
-
-  const initializeAuth = useCallback(async () => {
-    try {
-      console.log('🔐 Initializing auth...', window.location.hostname)
-
-      // Get current session
-      const { data: { session: currentSession }, error } = await supabase.auth.getSession()
-
-      if (error) {
-        console.error('❌ Error getting session:', error)
-
-        // Try to recover from session storage if available
-        if (typeof window !== 'undefined') {
-          try {
-            const sessionInfo = storage.getItem('lumidumi_session_info')
-            if (sessionInfo) {
-              const parsed = JSON.parse(sessionInfo)
-              console.log('📦 Found stored session info:', parsed.email)
-
-              // Attempt session refresh
-              const { data: { session: refreshedSession } } = await supabase.auth.refreshSession()
-              if (refreshedSession) {
-                console.log('✅ Session recovered from storage')
-                setSession(refreshedSession)
-                setUser(refreshedSession.user)
-                await checkAdminStatus(refreshedSession.user)
-                setLoading(false)
-                return
-              }
-            }
-          } catch (recoveryError) {
-            console.log('⚠️ Session recovery failed:', recoveryError)
-          }
-        }
-
-        setLoading(false)
-        return
-      }
-
-      if (currentSession) {
-        console.log('✅ Found active session:', currentSession.user.email)
-        setSession(currentSession)
-        setUser(currentSession.user)
-
-        // Check memory cache first
-        if (adminStatusCacheRef.current[currentSession.user.id] !== undefined) {
-          setIsAdmin(adminStatusCacheRef.current[currentSession.user.id])
-        } else {
-          // Check localStorage cache and set immediately to avoid flickering
-          const cachedAdminStatus = storage.getItem(`admin_status_${currentSession.user.id}`)
-          if (cachedAdminStatus) {
-            try {
-              const isAdminCached = JSON.parse(cachedAdminStatus)
-              setIsAdmin(isAdminCached)
-              adminStatusCacheRef.current[currentSession.user.id] = isAdminCached
-            } catch {
-              // Invalid cache, will be refreshed by checkAdminStatus
-              setIsAdmin(false)
-            }
-          } else {
-            // No cache exists, set false initially to avoid undefined state
-            setIsAdmin(false)
-          }
-        }
-
-        // Async check admin status in background (won't affect UI if cached)
-        checkAdminStatus(currentSession.user)
-
-        // Store session info
-        storage.setItem('lumidumi_session_info', JSON.stringify({
-          user_id: currentSession.user.id,
-          email: currentSession.user.email,
-          last_refresh: Date.now()
-        }))
-      } else {
-        console.log('🔍 No session found, checking for auth recovery options...')
-
-        // Check if we're returning from an auth redirect
-        if (typeof window !== 'undefined') {
-          const urlParams = new URLSearchParams(window.location.search)
-          const accessToken = urlParams.get('access_token')
-          const refreshToken = urlParams.get('refresh_token')
-
-          if (accessToken && refreshToken) {
-            console.log('🔗 Found auth tokens in URL, attempting session recovery...')
-            try {
-              const { data: { session: urlSession }, error: urlError } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken
-              })
-
-              if (!urlError && urlSession) {
-                console.log('✅ Session recovered from URL tokens')
-                setSession(urlSession)
-                setUser(urlSession.user)
-                await checkAdminStatus(urlSession.user)
-
-                // Clean up URL
-                window.history.replaceState({}, document.title, window.location.pathname)
-                return
-              }
-            } catch (urlRecoveryError) {
-              console.log('⚠️ URL session recovery failed:', urlRecoveryError)
-            }
-          }
-        }
-
-        // No session, clear any stored data
-        console.log('🚪 No valid session found, clearing auth state')
-        storage.removeItem('lumidumi_session_info')
-        setSession(null)
-        setUser(null)
-        setIsAdmin(false)
-      }
-    } catch (error) {
-      console.error('Error initializing auth:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   useEffect(() => {
-    let mounted = true
+    // Get initial session with timeout protection
+    const getInitialSession = async () => {
+      try {
+        console.log('🚀 Initializing auth session...')
 
-    // Initialize auth
-    initializeAuth()
+        // Set a timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+        )
+
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
+
+        if (error) {
+          console.error('❌ Error getting session:', error)
+          setUser(null)
+          setLoading(false)
+          return
+        }
+
+        if (session?.user) {
+          console.log('✅ Found existing session for:', session.user.email)
+          // Set loading false immediately, then fetch profile in background
+          setLoading(false)
+          await fetchUserProfile(session.user)
+        } else {
+          console.log('📭 No existing session found')
+          setUser(null)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('❌ Session initialization error:', error)
+        setUser(null)
+        setLoading(false)
+      }
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: any, currentSession: any) => {
-        if (!mounted) return
+      async (event, session) => {
+        console.log('🔄 Auth state change:', event, session?.user?.email)
 
-        console.log('Auth event:', event, 'for user:', currentSession?.user?.email || 'none')
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('🚪 User signed out or no session')
+          setUser(null)
+          setLoading(false)
+          return
+        }
 
-        switch (event) {
-          case 'SIGNED_IN':
-          case 'TOKEN_REFRESHED':
-            if (currentSession) {
-              console.log('🔓 User signed in:', currentSession.user.email)
-              setSession(currentSession)
-              setUser(currentSession.user)
-
-              // Set admin status immediately from cache to prevent flickering
-              if (adminStatusCacheRef.current[currentSession.user.id] !== undefined) {
-                setIsAdmin(adminStatusCacheRef.current[currentSession.user.id])
-              } else {
-                const cachedAdminStatus = storage.getItem(`admin_status_${currentSession.user.id}`)
-                if (cachedAdminStatus) {
-                  try {
-                    const isAdminCached = JSON.parse(cachedAdminStatus)
-                    setIsAdmin(isAdminCached)
-                    adminStatusCacheRef.current[currentSession.user.id] = isAdminCached
-                  } catch {
-                    setIsAdmin(false)
-                  }
-                } else {
-                  setIsAdmin(false)
-                }
-              }
-
-              // Background check (won't flicker if cached)
-              checkAdminStatus(currentSession.user)
-
-              // Create profile if it doesn't exist
-              if (event === 'SIGNED_IN') {
-                try {
-                  const { data: existingProfile } = await supabase
-                    .from('profiles')
-                    .select('id')
-                    .eq('id', currentSession.user.id)
-                    .single()
-
-                  if (!existingProfile) {
-                    const fullName = currentSession.user.user_metadata?.full_name ||
-                                   currentSession.user.email?.split('@')[0] || ''
-                    const [firstName, ...lastNameParts] = fullName.split(' ')
-                    const lastName = lastNameParts.join(' ')
-
-                    await supabase.from('profiles').insert({
-                      id: currentSession.user.id,
-                      email: currentSession.user.email,
-                      first_name: firstName || 'User',
-                      last_name: lastName || '',
-                      role: 'customer'
-                    })
-                  }
-                } catch (error) {
-                  console.error('Error creating profile:', error)
-                }
-              }
-
-              // Store session info
-              storage.setItem('lumidumi_session_info', JSON.stringify({
-                user_id: currentSession.user.id,
-                email: currentSession.user.email,
-                last_refresh: Date.now()
-              }))
-            }
-            break
-
-          case 'SIGNED_OUT':
-            console.log('🚪 User signed out, clearing auth state')
-            setSession(null)
-            setUser(null)
-            setIsAdmin(false)
-            adminStatusCacheRef.current = {}
-
-            // Clear all stored auth data
-            storage.removeItem('lumidumi_session_info')
-            // Clear admin status cache from localStorage
-            Object.keys(adminStatusCacheRef.current).forEach(userId => {
-              storage.removeItem(`admin_status_${userId}`)
-            })
-
-            // Force refresh data context to clear stale data
-            if (typeof window !== 'undefined') {
-              window.postMessage({ type: 'AUTH_SIGNED_OUT' }, '*')
-            }
-            break
-
-          case 'PASSWORD_RECOVERY':
-            // Handle password recovery if needed
-            break
-
-          default:
-            break
+        if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          if (session?.user) {
+            console.log('🔑 Valid session found, fetching profile...')
+            await fetchUserProfile(session.user)
+          }
         }
 
         setLoading(false)
       }
     )
 
-    // Set up automatic session refresh
-    const refreshInterval = setInterval(async () => {
-      if (session && !loading) {
-        await refreshSession()
-      }
-    }, 5 * 60 * 1000) // Refresh every 5 minutes
+    return () => subscription.unsubscribe()
+  }, [])
 
-    // Handle page visibility changes
-    const handleVisibilityChange = async () => {
-      if (!document.hidden && session && !loading) {
-        await refreshSession()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
-      mounted = false
-      subscription?.unsubscribe()
-      clearInterval(refreshInterval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [initializeAuth, refreshSession])
-
-  const signIn = async (email: string, password: string) => {
+  const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      return { error }
+      console.log('🔍 Fetching user profile for:', supabaseUser.email)
+
+      // First, set a fallback user immediately to prevent broken state
+      const fallbackUser = {
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        name: supabaseUser.user_metadata?.full_name || supabaseUser.email || '',
+        phone: undefined,
+        role: supabaseUser.email === 'bhanuvashisht99@gmail.com' ? 'admin' : 'customer',
+        avatar_url: undefined,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_admin: supabaseUser.email === 'bhanuvashisht99@gmail.com'
+      }
+
+      // Set fallback immediately to prevent broken state
+      setUser(fallbackUser)
+
+      // Then try to fetch the real profile with timeout
+      const profilePromise = supabase
+        .from('profiles')
+        .select('id, email, first_name, last_name, phone, role, created_at, updated_at')
+        .eq('id', supabaseUser.id)
+        .single()
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+      )
+
+      try {
+        const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any
+
+        if (!error && data) {
+          // Update with real profile data, converting to our User interface
+          const userWithAdmin = {
+            id: data.id,
+            email: data.email || supabaseUser.email,
+            name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.first_name || data.email || 'User',
+            phone: data.phone,
+            role: data.role,
+            avatar_url: undefined, // profiles table doesn't have avatar_url
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            is_admin: data.role === 'admin'
+          }
+          console.log('✅ User profile loaded:', userWithAdmin.email, 'Role:', userWithAdmin.role)
+          setUser(userWithAdmin)
+        } else {
+          console.log('🔄 Using fallback user data (profile fetch failed):', fallbackUser.email)
+        }
+      } catch (profileError) {
+        console.log('🔄 Using fallback user data (timeout or error):', fallbackUser.email)
+      }
+
     } catch (error) {
-      return { error }
+      console.error('❌ Error in fetchUserProfile:', error)
+      // Fallback user is already set above
     }
   }
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      const [firstName, ...lastNameParts] = fullName.split(' ')
-      const lastName = lastNameParts.join(' ')
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+    return { error }
+  }
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            first_name: firstName,
-            last_name: lastName
+  const signUp = async (email: string, password: string, fullName: string) => {
+    // First, check if user already exists
+    try {
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email.toLowerCase())
+        .single()
+
+      if (existingUser) {
+        return {
+          error: {
+            message: 'An account with this email already exists. Please try signing in instead.',
+            code: 'user_already_exists'
           }
         }
-      })
-
-      return { error }
+      }
     } catch (error) {
+      // If error is 'PGRST116' (no rows found), that's good - user doesn't exist
+      console.log('User existence check:', error)
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName
+        }
+      }
+    })
+
+    // Handle specific Supabase signup errors
+    if (error) {
+      if (error.message?.includes('already_registered') || error.message?.includes('already exists')) {
+        return {
+          error: {
+            message: 'An account with this email already exists. Please try signing in instead.',
+            code: 'user_already_exists'
+          }
+        }
+      }
       return { error }
     }
+
+    if (data.user && !error) {
+      // Create user profile in our profiles table
+      const [firstName, ...rest] = fullName.split(' ')
+      const { error: profileError } = await (supabase as any)
+        .from('profiles')
+        .insert([
+          {
+            id: data.user.id,
+            email: data.user.email,
+            first_name: firstName || 'User',
+            last_name: rest.join(' ') || '',
+            role: 'customer'
+          }
+        ])
+
+      if (profileError) {
+        console.error('Error creating user profile:', profileError)
+        // If profile creation fails because user already exists, that's fine
+        if (!profileError.message?.includes('duplicate key') && !profileError.message?.includes('already exists')) {
+          return {
+            error: {
+              message: 'Account was created but profile setup failed. Please contact support.',
+              code: 'profile_creation_failed'
+            }
+          }
+        }
+      }
+    }
+
+    return { error }
   }
 
   const signOut = async () => {
     try {
+      // Clear local state first
+      setUser(null)
+      setLoading(false)
+
+      // Sign out from Supabase
       await supabase.auth.signOut()
+
+      // Clear any cached data
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        localStorage.clear()
+        // Clear sessionStorage
+        sessionStorage.clear()
+        // Force page reload to clear all cached state
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 100)
+      }
     } catch (error) {
       console.error('Error signing out:', error)
+      // Even if there's an error, clear local state
+      setUser(null)
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
     }
   }
 
   const resetPassword = async (email: string) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      })
-      return { error }
-    } catch (error) {
-      return { error }
-    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return { error }
   }
 
   const value = {
     user,
-    session,
     loading,
-    isAdmin,
     signIn,
     signUp,
     signOut,
-    resetPassword,
-    refreshSession,
+    resetPassword
   }
 
   return (
@@ -496,7 +286,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')

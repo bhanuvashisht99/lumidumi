@@ -52,7 +52,6 @@ export default function ProductDetailPage() {
 
       const productData = await getProductBySlug(slug)
       console.log('📦 Product data received:', productData)
-      console.log('🔍 Product ID type:', typeof productData?.id, 'Value:', productData?.id)
 
       if (!productData) {
         console.log('❌ No product data found')
@@ -62,13 +61,20 @@ export default function ProductDetailPage() {
       }
 
       // Fetch images and colors in parallel
-      console.log('🔗 Fetching images and colors for product ID:', productData.id)
+      const productId = (productData as any)?.id
+      if (!productId) {
+        console.log('❌ No product ID found')
+        setError('Invalid product data')
+        setLoading(false)
+        return
+      }
+
       const [imagesResponse, colorsResponse] = await Promise.all([
-        fetch(`/api/admin/products/${productData.id}/images`).catch(e => {
+        fetch(`/api/admin/products/${productId}/images`).catch(e => {
           console.error('Images fetch error:', e)
           return { ok: false }
         }),
-        fetch(`/api/admin/products/${productData.id}/colors`).catch(e => {
+        fetch(`/api/admin/products/${productId}/colors`).catch(e => {
           console.error('Colors fetch error:', e)
           return { ok: false }
         })
@@ -83,7 +89,7 @@ export default function ProductDetailPage() {
       console.log('📸 Images received:', images)
       console.log('🎨 Colors received:', colors)
 
-      const productWithDetails = { ...productData, images, colors }
+      const productWithDetails = { ...(productData as any), images, colors }
       console.log('✅ Setting product with details:', productWithDetails)
       setProduct(productWithDetails)
 
@@ -94,7 +100,7 @@ export default function ProductDetailPage() {
 
       console.log('🖼️ Initial images:', initialImages)
       setCurrentImages(initialImages)
-      setCurrentPrice(productData.price)
+      setCurrentPrice((productData as any).price)
 
       // If no colors, just use product images
       if (!colors || colors.length === 0) {

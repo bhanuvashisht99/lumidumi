@@ -1,73 +1,36 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Use a lazy initialization approach
-declare global {
-  var __lumidumi_supabase_client: any
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables:', { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey })
+  throw new Error('Missing Supabase environment variables')
 }
 
-let _client: any = null
-
-function createSupabaseClient() {
-  if (typeof globalThis !== 'undefined' && globalThis.__lumidumi_supabase_client) {
-    return globalThis.__lumidumi_supabase_client
-  }
-
-  console.log('🔧 Creating new Supabase client instance')
-
-  const client = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false, // Disable to prevent conflicts
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      storageKey: 'sb-lumidumi-auth-token',
-      flowType: 'pkce',
-      debug: false,
-    },
-    global: {
-      headers: {
-        'X-Client-Info': 'lumidumi-web'
-      }
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 2
-      }
-    }
-  })
-
-  // Store globally
-  if (typeof globalThis !== 'undefined') {
-    globalThis.__lumidumi_supabase_client = client
-  }
-  if (typeof window !== 'undefined') {
-    (window as any).__lumidumi_supabase_client = client
-  }
-
-  _client = client
-  return client
+// Singleton pattern to prevent multiple instances
+const globalForSupabase = globalThis as unknown as {
+  supabase: ReturnType<typeof createClient> | undefined
 }
 
-export const supabase = new Proxy({} as any, {
-  get(target, prop) {
-    if (!_client) {
-      _client = createSupabaseClient()
-    }
-    return _client[prop]
+export const supabase = globalForSupabase.supabase ?? createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'lumidumi-auth-token',
+    flowType: 'pkce'
   }
 })
 
-// Admin client for server-side operations (singleton)
-let _supabaseAdmin: any = null
+if (process.env.NODE_ENV !== 'production') globalForSupabase.supabase = supabase
 
-export const supabaseAdmin = (() => {
-  if (!_supabaseAdmin) {
-    _supabaseAdmin = createClient(
+// Admin client for server operations - only create on server side
+export const supabaseAdmin = typeof window === 'undefined'
+  ? createClient(
       supabaseUrl,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || '',
       {
         auth: {
           autoRefreshToken: false,
@@ -75,6 +38,6 @@ export const supabaseAdmin = (() => {
         }
       }
     )
-  }
-  return _supabaseAdmin
-})()
+  : null as any
+
+export default supabase

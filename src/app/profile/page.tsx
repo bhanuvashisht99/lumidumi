@@ -46,10 +46,10 @@ export default function ProfilePage() {
       if (profileData) {
         setProfile(profileData)
         setFormData({
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          email: profileData.email || user.email || '',
-          phone: profileData.phone || ''
+          first_name: (profileData as any).first_name || '',
+          last_name: (profileData as any).last_name || '',
+          email: (profileData as any).email || user.email || '',
+          phone: (profileData as any).phone || ''
         })
       } else {
         // Create profile if it doesn't exist

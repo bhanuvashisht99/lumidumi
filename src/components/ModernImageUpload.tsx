@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import ModernImageCropper from './ModernImageCropper'
 import { processImageFileWithFallback, isHeicFile } from '@/lib/heicConverterBrowser'
 
@@ -186,6 +186,7 @@ export default function ModernImageUpload({
     onImagesChange(newImages)
   }, [images, onImagesChange])
 
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -226,28 +227,32 @@ export default function ModernImageUpload({
                 className="w-full h-full object-cover"
               />
 
-              {/* Primary badge */}
-              {image.is_primary && (
-                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                  Primary
-                </div>
-              )}
+              {/* Badges */}
+              <div className="absolute top-2 left-2 flex flex-col space-y-1">
+                {image.is_primary && (
+                  <div className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                    Primary
+                  </div>
+                )}
+              </div>
 
               {/* Controls overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                {!image.is_primary && (
-                  <button
-                    type="button"
-                    onClick={() => setPrimaryImage(index)}
-                    className="bg-white text-gray-900 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100 transition-colors"
-                  >
-                    Set Primary
-                  </button>
-                )}
+              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-2">
+                <div className="flex space-x-2">
+                  {!image.is_primary && (
+                    <button
+                      type="button"
+                      onClick={() => setPrimaryImage(index)}
+                      className="bg-white text-gray-900 px-2 py-1 rounded text-xs font-medium hover:bg-gray-100 transition-colors"
+                    >
+                      Set Primary
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="bg-red-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700 transition-colors"
+                  className="bg-red-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-red-700 transition-colors"
                 >
                   Remove
                 </button>
@@ -320,6 +325,9 @@ export default function ModernImageUpload({
           <li>• Maximum file size: 10MB per image</li>
           <li>• Images will be cropped to square format</li>
           <li>• First uploaded image becomes the primary image</li>
+          <li>• <span className="text-green-600 font-medium">📦 Product images</span> are shown on product pages</li>
+          <li>• <span className="text-purple-600 font-medium">🎨 Color images</span> can be assigned to specific color variants</li>
+          <li>• Click the assignment button on hover to switch between Product/Color</li>
           <li>• Images are uploaded when you save the product</li>
         </ul>
       </div>

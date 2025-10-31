@@ -123,9 +123,39 @@ export default function ModernProductsTab() {
     console.log('📸 Product images:', product.images)
     console.log('🎨 Product colors:', product.colors)
 
+    // Parse color image_urls from JSON strings back to arrays
+    const parsedColors = (product.colors || []).map((color: any) => {
+      console.log(`🔍 Processing color ${color.color_name}:`, {
+        image_urls_type: typeof color.image_urls,
+        image_urls_value: color.image_urls,
+        primary_image: color.primary_image
+      })
+
+      const parsedColor = { ...color }
+
+      // Parse image_urls if it's a string
+      if (typeof color.image_urls === 'string') {
+        try {
+          parsedColor.image_urls = JSON.parse(color.image_urls)
+          console.log(`✅ Parsed ${color.color_name} image_urls:`, parsedColor.image_urls)
+        } catch (error) {
+          console.warn('Failed to parse image_urls for color:', color.color_name, error)
+          parsedColor.image_urls = []
+        }
+      } else if (Array.isArray(color.image_urls)) {
+        parsedColor.image_urls = color.image_urls
+        console.log(`✅ ${color.color_name} image_urls already array:`, parsedColor.image_urls)
+      } else {
+        parsedColor.image_urls = []
+        console.log(`⚠️ ${color.color_name} image_urls null/undefined, setting to empty array`)
+      }
+
+      return parsedColor
+    })
+
     setFormData(cleanFormData)
     setFormImages(product.images || [])
-    setFormColors(product.colors || [])
+    setFormColors(parsedColors)
     setSaveSuccess(false)
     setEditingProduct(product)
     setShowAddForm(true)

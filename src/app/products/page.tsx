@@ -167,8 +167,8 @@ export default function ProductsPage() {
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
   // Use preloaded data instead of separate loading
-  const { data, isLoading, refreshData, error } = usePreloadedData()
-  const products = data?.products || []
+  const { data, isLoading, refreshData, error, publicProducts } = usePreloadedData()
+  const products = publicProducts || []
 
   // Debug logging
   useEffect(() => {

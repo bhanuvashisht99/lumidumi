@@ -32,6 +32,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Generate unique slug
+    let baseSlug = productData.slug || productData.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+    let uniqueSlug = baseSlug
+    let counter = 1
+
+    // Check for existing slug and make it unique
+    while (true) {
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('slug', uniqueSlug)
+        .maybeSingle()
+
+      if (!existingProduct) {
+        break // Slug is unique
+      }
+
+      uniqueSlug = `${baseSlug}-${counter}`
+      counter++
+    }
+
     // Clean productData to only include valid columns
     const cleanProductData = {
       name: productData.name,
@@ -50,7 +71,7 @@ export async function POST(request: NextRequest) {
       material: productData.material || null,
       is_active: productData.is_active !== false,
       featured: productData.featured === true,
-      slug: productData.slug || productData.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      slug: uniqueSlug
     }
 
     // Start transaction
@@ -178,6 +199,28 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Generate unique slug for updates
+    let baseSlug = updateData.slug || updateData.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+    let uniqueSlug = baseSlug
+    let counter = 1
+
+    // Check for existing slug (excluding current product)
+    while (true) {
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('slug', uniqueSlug)
+        .neq('id', id)
+        .maybeSingle()
+
+      if (!existingProduct) {
+        break // Slug is unique
+      }
+
+      uniqueSlug = `${baseSlug}-${counter}`
+      counter++
+    }
+
     // Clean updateData to only include valid columns
     const cleanUpdateData = {
       name: updateData.name,
@@ -196,7 +239,7 @@ export async function PUT(request: NextRequest) {
       material: updateData.material || null,
       is_active: updateData.is_active !== false,
       featured: updateData.featured === true,
-      slug: updateData.slug || updateData.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      slug: uniqueSlug
     }
 
     // Update product using service role (bypasses RLS)

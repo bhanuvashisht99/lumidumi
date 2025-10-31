@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { getAllProducts, getAllProductsWithImages } from '@/lib/database'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -30,129 +29,114 @@ interface DataPreloadContextType {
   isLoading: boolean
   error: string | null
   refreshData: () => Promise<void>
+  publicProducts: any[] // Only active products for public use
 }
 
 const DataPreloadContext = createContext<DataPreloadContextType | undefined>(undefined)
 
 export function DataPreloadProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PreloadedData | null>(null)
+  const [publicProducts, setPublicProducts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { loading: authLoading, user, session } = useAuth()
-  const [hasInitialized, setHasInitialized] = useState(false)
+  const { loading: authLoading, user } = useAuth()
 
   const loadAllData = async () => {
+    if (authLoading) return
+
     try {
       setIsLoading(true)
       setError(null)
 
-      console.log('🔄 Starting data preload...', {
-        authLoading,
-        userEmail: user?.email || 'anonymous',
-        hasAuth: !!user
-      })
+      console.log('📊 [DataPreload] Loading all data (minimal)...', user?.email || 'anonymous')
+      console.log('📊 [DataPreload] Auth loading:', authLoading, 'User:', user?.email)
 
-      // Load critical data first, then everything else in background
-      // Add timeout for production to handle slow networks
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Data loading timeout')), 30000) // 30 second timeout
-      })
+      // Load products with images and colors (all products for admin)
+      const { data: productsData } = await supabase
+        .from('products')
+        .select(`
+          *,
+          product_images (
+            id,
+            url,
+            alt_text,
+            sort_order,
+            is_primary
+          ),
+          product_colors (
+            id,
+            color_name,
+            color_code,
+            price_modifier,
+            stock_quantity,
+            is_available
+          )
+        `)
+        .order('created_at', { ascending: false })
 
-      const dataPromise = Promise.allSettled([
-        // Products with images and colors
-        getAllProductsWithImages().catch(() => []),
+      // Load categories (all categories for admin)
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
 
-        // Categories
-        supabase.from('categories').select('*').then((res: any) => res.data || []),
+      // Load customers
+      const { data: customersData } = await supabase
+        .from('profiles')
+        .select('*')
 
-        // Orders (for stats) - fallback to empty array since orders table doesn't exist yet
-        Promise.resolve([]),
+      console.log('📊 [DataPreload] Raw products data:', productsData?.length || 0, 'products')
 
-        // Customers (for stats)
-        supabase.from('profiles').select('*').then((res: any) => res.data || []),
+      // Transform products data to flatten images and colors
+      const products = (productsData || []).map((product: any) => ({
+        ...product,
+        images: product.product_images || [],
+        colors: product.product_colors || []
+      }))
 
-        // Content sections
-        Promise.allSettled([
-          fetch('/api/admin/content?section=hero').then(res => res.ok ? res.json() : { data: null }),
-          fetch('/api/admin/content?section=about').then(res => res.ok ? res.json() : { data: null }),
-          fetch('/api/admin/content?section=pricing').then(res => res.ok ? res.json() : { data: null }),
-          fetch('/api/admin/content?section=contact').then(res => res.ok ? res.json() : { data: null }),
-          fetch('/api/admin/content?section=footer').then(res => res.ok ? res.json() : { data: null })
-        ])
-      ])
+      console.log('📊 [DataPreload] Transformed products:', products.length)
 
-      const [
-        productsResult,
-        categoriesResult,
-        ordersResult,
-        customersResult,
-        contentResults
-      ] = await Promise.race([dataPromise, timeoutPromise]) as any[]
+      // Filter only active products for public use
+      const activeProducts = products.filter((product: any) => product.is_active === true)
 
-      // Extract results with detailed logging
-      const products = productsResult.status === 'fulfilled' ? productsResult.value : []
-      const categories = categoriesResult.status === 'fulfilled' ? categoriesResult.value : []
-      const orders = ordersResult.status === 'fulfilled' ? ordersResult.value : []
-      const customers = customersResult.status === 'fulfilled' ? customersResult.value : []
+      console.log('📊 [DataPreload] Active products for public:', activeProducts.length)
 
-      console.log('📊 Data load results:', {
-        products: `${products.length} products`,
-        categories: `${categories.length} categories`,
-        orders: `${orders.length} orders`,
-        customers: `${customers.length} customers`,
-        productsError: productsResult.status === 'rejected' ? productsResult.reason : null
-      })
-
-      // Process content
-      const contentSections = contentResults.status === 'fulfilled' ? contentResults.value : []
-      const content = {
-        hero: contentSections[0]?.status === 'fulfilled' ? contentSections[0].value?.data?.additional_data : null,
-        about: contentSections[1]?.status === 'fulfilled' ? contentSections[1].value?.data?.additional_data : null,
-        pricing: contentSections[2]?.status === 'fulfilled' ? contentSections[2].value?.data?.additional_data : null,
-        contact: contentSections[3]?.status === 'fulfilled' ? contentSections[3].value?.data?.additional_data : null,
-        footer: contentSections[4]?.status === 'fulfilled' ? contentSections[4].value?.data?.additional_data : null
-      }
-
-      // Calculate stats
-      const stats = {
-        totalProducts: products.length,
-        totalOrders: orders.length,
-        revenue: 0, // No orders table yet, so revenue is 0
-        totalCustomers: customers.length
-      }
+      const categories = categoriesData || []
+      const customers = customersData || []
 
       const preloadedData: PreloadedData = {
-        products,
+        products, // All products for admin
         categories,
-        orders,
+        orders: [], // No orders table yet
         customers,
-        content,
-        stats
+        content: {
+          hero: null,
+          about: null,
+          pricing: null,
+          contact: null,
+          footer: null
+        },
+        stats: {
+          totalProducts: products.length,
+          totalOrders: 0,
+          revenue: 0,
+          totalCustomers: customers.length
+        }
       }
 
       setData(preloadedData)
-      console.log('✅ Global data preload completed:', {
+      setPublicProducts(activeProducts)
+
+      console.log('✅ [DataPreload] Data loaded successfully (minimal):', {
         products: products.length,
         categories: categories.length,
-        orders: orders.length,
         customers: customers.length,
-        stats
+        activeProducts: activeProducts.length
       })
+      console.log('✅ [DataPreload] Setting publicProducts state:', activeProducts)
 
     } catch (err) {
-      console.error('❌ Global data preload failed:', err)
-
-      // In production, be more specific about errors
-      if (process.env.NODE_ENV === 'production') {
-        // Check if it's a network error
-        if (err instanceof TypeError && err.message.includes('fetch')) {
-          setError('Network connection issue - please check your internet connection')
-        } else {
-          setError('Unable to load data - please refresh the page')
-        }
-      } else {
-        setError('Failed to load application data')
-      }
+      console.error('❌ Data load failed:', err)
+      setError('Failed to load data')
     } finally {
       setIsLoading(false)
     }
@@ -162,38 +146,25 @@ export function DataPreloadProvider({ children }: { children: ReactNode }) {
     await loadAllData()
   }
 
+  // Load data when auth is ready
   useEffect(() => {
-    // Wait for auth to complete and ensure we only initialize once
-    if (!authLoading && !hasInitialized) {
-      console.log('🚀 Auth ready, initializing data load. User:', user?.email || 'anonymous')
-      setHasInitialized(true)
+    console.log('📊 [DataPreload] useEffect triggered - authLoading:', authLoading)
+    if (!authLoading) {
+      console.log('📊 [DataPreload] Auth ready, calling loadAllData()')
       loadAllData()
+    } else {
+      console.log('📊 [DataPreload] Auth still loading, waiting...')
     }
-  }, [authLoading, hasInitialized, user])
-
-  // Listen for auth sign-out events to clear data
-  useEffect(() => {
-    const handleAuthEvents = (event: MessageEvent) => {
-      if (event.data.type === 'AUTH_SIGNED_OUT') {
-        console.log('🔄 Auth signed out, clearing preloaded data')
-        setData(null)
-        setError(null)
-      }
-    }
-
-    window.addEventListener('message', handleAuthEvents)
-    return () => window.removeEventListener('message', handleAuthEvents)
-  }, [])
-
-  const value = {
-    data,
-    isLoading,
-    error,
-    refreshData
-  }
+  }, [authLoading])
 
   return (
-    <DataPreloadContext.Provider value={value}>
+    <DataPreloadContext.Provider value={{
+      data,
+      isLoading,
+      error,
+      refreshData,
+      publicProducts
+    }}>
       {children}
     </DataPreloadContext.Provider>
   )
@@ -207,7 +178,6 @@ export function usePreloadedData() {
   return context
 }
 
-// Hook for specific data types
 export function usePreloadedProducts() {
   const { data } = usePreloadedData()
   return data?.products || []

@@ -79,8 +79,11 @@ export interface CustomOrder {
 export interface User {
   id: string
   email: string
-  name?: string
+  name: string
   phone?: string
-  role: 'customer' | 'admin'
+  role: string
+  avatar_url?: string
   created_at: string
+  updated_at: string
+  is_admin?: boolean
 }

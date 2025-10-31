@@ -12,7 +12,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const { signIn, user, isAdmin } = useAuth()
+  const { signIn, user } = useAuth()
+  const isAdmin = user?.is_admin || false
   const router = useRouter()
 
   useEffect(() => {

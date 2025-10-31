@@ -15,7 +15,8 @@ export default function AuthGuard({
   requireAdmin = false,
   redirectTo = '/login'
 }: AuthGuardProps) {
-  const { user, loading, isAdmin } = useAuth()
+  const { user, loading } = useAuth()
+  const isAdmin = user?.is_admin || false
   const router = useRouter()
   const [hasChecked, setHasChecked] = useState(false)
 
