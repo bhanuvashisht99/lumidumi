@@ -12,6 +12,7 @@ function OrderSuccessContent() {
     payment_id?: string
     order_id?: string
     amount?: number
+    isGuest?: boolean
   }>({})
 
   useEffect(() => {
