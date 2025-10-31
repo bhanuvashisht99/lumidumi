@@ -170,6 +170,13 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
+      // For guest users, create a temporary account using phone number
+      if (!user) {
+        console.log('🔄 Guest checkout - creating temporary account')
+        // We'll handle guest checkout in the payment success handler
+        // No need to block payment flow for account creation
+      }
+
       const orderData = await createRazorpayOrder()
 
       // Check if Razorpay key is available
@@ -204,6 +211,37 @@ export default function CheckoutPage() {
         handler: async function (response: any) {
           // Payment successful
           try {
+            // If guest user, create account before processing payment
+            let isGuestAccount = false
+            if (!user) {
+              console.log('🔄 Creating guest account for order')
+              try {
+                // Create guest account with phone and email
+                const guestResponse = await fetch('/api/auth/create-guest', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    phone: formData.phone,
+                    email: formData.email,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                  }),
+                })
+
+                if (guestResponse.ok) {
+                  isGuestAccount = true
+                  console.log('✅ Guest account created successfully')
+                } else {
+                  console.log('⚠️ Guest account creation failed, proceeding with order')
+                }
+              } catch (guestError) {
+                console.error('Guest account error:', guestError)
+                // Continue with order even if guest account fails
+              }
+            }
+
             const verifyResponse = await fetch('/api/razorpay/verify-payment', {
               method: 'POST',
               headers: {
@@ -217,6 +255,8 @@ export default function CheckoutPage() {
                   items,
                   customerInfo: formData,
                   total,
+                  isGuestOrder: !user,
+                  guestAccountCreated: isGuestAccount,
                 },
               }),
             })
@@ -224,7 +264,13 @@ export default function CheckoutPage() {
             if (verifyResponse.ok) {
               // Clear cart and redirect to success page
               clearCart()
-              router.push(`/order-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&amount=${orderData.amount}`)
+              const successUrl = `/order-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&amount=${orderData.amount}`
+              if (isGuestAccount) {
+                // Add guest account info to success page
+                router.push(`${successUrl}&guest=true`)
+              } else {
+                router.push(successUrl)
+              }
             } else {
               throw new Error('Payment verification failed')
             }
@@ -263,7 +309,26 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-cream-50 pt-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold text-charcoal mb-8">Checkout</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-charcoal mb-2">Checkout</h1>
+          {!user && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">Guest Checkout</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    No account needed! We'll create one for you automatically after your order is complete.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Checkout Form */}
