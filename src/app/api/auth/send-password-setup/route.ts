@@ -1,19 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-// Create email transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '465'),
-  secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-})
+// Create Resend client
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,21 +18,18 @@ export async function POST(request: NextRequest) {
     // Generate email content
     const emailHtml = generatePasswordSetupEmail(name, resetLink)
 
-    // Send email using nodemailer
-    const mailOptions = {
-      from: {
-        name: 'Lumidumi',
-        address: process.env.EMAIL_USER!
-      },
-      to: email,
+    // Send email using Resend
+    console.log('📧 Sending password setup email via Resend to:', email)
+
+    const result = await resend.emails.send({
+      from: 'Lumidumi <team@lumidumi.com>',
+      to: [email],
       subject: 'Set Up Your Password - Lumidumi Account',
       html: emailHtml,
-    }
+    })
 
-    console.log('📧 Sending password setup email to:', email)
-
-    await transporter.sendMail(mailOptions)
-    console.log('✅ Password setup email sent successfully to:', email)
+    console.log('✅ Password setup email sent successfully via Resend!')
+    console.log('📨 Email result:', result)
 
     return NextResponse.json({
       success: true,
@@ -51,9 +37,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error sending password setup email:', error)
+    console.error('❌ Resend password setup email failed:', error)
     return NextResponse.json(
-      { error: 'Failed to send password setup email' },
+      {
+        error: 'Failed to send password setup email',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }

@@ -1,33 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Create email transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '465'),
-  secure: process.env.EMAIL_PORT === '465', // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-})
-
-// Log email configuration on startup
-console.log('📧 Email configuration:', {
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  user: process.env.EMAIL_USER,
-  passConfigured: !!process.env.EMAIL_PASS
-})
+// Create Resend client
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,25 +48,18 @@ export async function POST(request: NextRequest) {
     // Generate email content
     const emailHtml = generateOrderConfirmationEmail(order)
 
-    // Send email using nodemailer
-    const mailOptions = {
-      from: {
-        name: 'Lumidumi',
-        address: process.env.EMAIL_USER!
-      },
-      to: order.customer_email,
+    // Send email using Resend
+    console.log('📧 Sending order confirmation email via Resend to:', order.customer_email)
+
+    const result = await resend.emails.send({
+      from: 'Lumidumi <team@lumidumi.com>',
+      to: [order.customer_email],
       subject: `Order Confirmation #${order.id} - Lumidumi`,
       html: emailHtml,
-    }
-
-    console.log('📧 Attempting to send email with options:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject
     })
 
-    await transporter.sendMail(mailOptions)
-    console.log('✅ Order confirmation email sent successfully to:', order.customer_email)
+    console.log('✅ Order confirmation email sent successfully via Resend!')
+    console.log('📨 Email result:', result)
 
     return NextResponse.json({
       success: true,
@@ -94,9 +68,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error sending confirmation email:', error)
+    console.error('❌ Resend confirmation email failed:', error)
     return NextResponse.json(
-      { error: 'Failed to send confirmation email' },
+      {
+        error: 'Failed to send confirmation email',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }

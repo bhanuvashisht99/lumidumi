@@ -66,6 +66,17 @@ export default function OrdersTab() {
     })
   }
 
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -130,6 +141,18 @@ export default function OrdersTab() {
                     <p className="text-sm text-charcoal/60">
                       🛍️ {order.order_items?.length || 0} items • ₹{order.total_amount?.toLocaleString()}
                     </p>
+                    {order.order_items && order.order_items.length > 0 && (
+                      <div className="text-xs text-charcoal/50 mt-1">
+                        {order.order_items.slice(0, 2).map((item: any, idx: number) => (
+                          <span key={idx}>
+                            {item.product_name || 'Product'}
+                            {item.selected_color && ` (${item.selected_color})`}
+                            {idx < Math.min(order.order_items.length, 2) - 1 && ', '}
+                          </span>
+                        ))}
+                        {order.order_items.length > 2 && <span> +{order.order_items.length - 2} more</span>}
+                      </div>
+                    )}
                     <p className="text-xs text-charcoal/50">
                       📅 {formatDate(order.created_at)}
                     </p>
@@ -179,8 +202,8 @@ export default function OrdersTab() {
                       <p className="font-medium">₹{selectedOrder.total_amount?.toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="text-charcoal/60">Order Date:</span>
-                      <p>{formatDate(selectedOrder.created_at)}</p>
+                      <span className="text-charcoal/60">Order Date & Time:</span>
+                      <p>{formatDateTime(selectedOrder.created_at)}</p>
                     </div>
                     {selectedOrder.razorpay_payment_id && (
                       <div>
