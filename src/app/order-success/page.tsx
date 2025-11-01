@@ -146,8 +146,8 @@ function OrderSuccessContent() {
               Contact us at{' '}
               <a href="mailto:support@lumidumi.com" className="text-cream-300 hover:underline">
                 support@lumidumi.com
-              </a>{' '}
-              or{' '}
+              </a>
+              {' '}or{' '}
               <a href="tel:+919876543210" className="text-cream-300 hover:underline">
                 +91 98765 43210
               </a>

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
+export const dynamic = 'force-dynamic'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -39,12 +41,17 @@ export default function MyOrdersPage() {
       setLoading(true)
       setError(null)
 
+      console.log('🔍 Fetching user orders...')
+
       // Get the current session to get the access token
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.access_token) {
+        console.error('❌ No valid session found')
         throw new Error('No valid session found')
       }
+
+      console.log('✅ Valid session found, making API request...')
 
       const response = await fetch('/api/user/orders', {
         headers: {
@@ -52,15 +59,20 @@ export default function MyOrdersPage() {
         },
       })
 
+      console.log('📡 API response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to fetch orders')
+        const errorText = await response.text()
+        console.error('❌ API request failed:', response.status, errorText)
+        throw new Error(`Failed to fetch orders: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('✅ Orders fetched successfully:', data.length, 'orders')
       setOrders(data)
     } catch (error) {
-      console.error('Error fetching orders:', error)
-      setError('Failed to load your orders')
+      console.error('❌ Error fetching orders:', error)
+      setError(`Failed to load your orders: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }

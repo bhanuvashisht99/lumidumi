@@ -21,15 +21,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session with timeout protection
+    // Detect mobile browser
+    const isMobile = typeof window !== 'undefined' &&
+      (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+
+    // Get initial session with timeout protection and mobile-specific handling
     const getInitialSession = async () => {
       try {
         console.log('🚀 Initializing auth session...')
 
+        // For mobile browsers, try to refresh the session first
+        if (isMobile) {
+          console.log('📱 Mobile device detected, refreshing session...')
+          try {
+            await supabase.auth.refreshSession()
+          } catch (refreshError) {
+            console.log('⚠️ Session refresh failed on mobile:', refreshError)
+          }
+        }
+
         // Set a timeout to prevent hanging
         const sessionPromise = supabase.auth.getSession()
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session fetch timeout')), 5000)
+          setTimeout(() => reject(new Error('Session fetch timeout')), 8000) // Increased timeout for mobile
         )
 
         const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
@@ -60,10 +74,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession()
 
-    // Listen for auth changes
+    // Listen for auth changes with mobile-specific handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔄 Auth state change:', event, session?.user?.email)
+
+        // Handle mobile page refresh specifically
+        if (event === 'INITIAL_SESSION' && isMobile && session?.user) {
+          console.log('📱 Mobile initial session detected, ensuring persistence...')
+          // Force a session refresh on mobile to ensure it's valid
+          try {
+            const { data: refreshedSession } = await supabase.auth.refreshSession()
+            if (refreshedSession.session?.user) {
+              await fetchUserProfile(refreshedSession.session.user)
+              setLoading(false)
+              return
+            }
+          } catch (refreshError) {
+            console.log('⚠️ Mobile session refresh failed:', refreshError)
+          }
+        }
 
         if (event === 'SIGNED_OUT' || !session) {
           console.log('🚪 User signed out or no session')
