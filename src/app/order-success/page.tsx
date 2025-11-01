@@ -49,7 +49,7 @@ function OrderSuccessContent() {
           </h1>
 
           <p className="text-lg text-charcoal/70 mb-8">
-            Thank you for your order. We've received your payment and will start processing your handcrafted candles right away.
+            Thank you for your order. We've received your payment and sent a confirmation email to your inbox. We'll start processing your handcrafted candles right away.
           </p>
 
           {/* Order Details */}
@@ -89,9 +89,21 @@ function OrderSuccessContent() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-green-800">Account Created!</h3>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className="text-sm text-green-700 mt-1 mb-3">
                     We've automatically created an account for you with the email you provided. You can use this to track your orders and make future purchases even faster!
                   </p>
+                  <div className="bg-white rounded-md p-3 border border-green-200">
+                    <p className="text-sm text-green-800 font-medium mb-2">To access your account:</p>
+                    <ol className="text-sm text-green-700 space-y-1">
+                      <li>1. Check your email inbox for a password setup email</li>
+                      <li>2. Click the link in the email to set your password</li>
+                      <li>3. Go to the <Link href="/login" className="text-cream-300 hover:underline font-medium">Login page</Link> and sign in with your email and new password</li>
+                      <li>4. View all your orders and manage your account</li>
+                    </ol>
+                    <p className="text-xs text-green-600 mt-2 italic">
+                      💡 No email received? Use "Forgot Password" on the login page to get a new setup link.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -101,7 +113,7 @@ function OrderSuccessContent() {
           <div className="bg-blue-50 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-semibold text-charcoal mb-3">What happens next?</h3>
             <ul className="text-left space-y-2 text-charcoal/70">
-              <li>✅ You'll receive an order confirmation email shortly</li>
+              <li>✅ Order confirmation email sent to your inbox</li>
               <li>🕐 We'll start crafting your candles within 1-2 business days</li>
               <li>📦 You'll get a shipping notification with tracking details</li>
               <li>🚚 Your order will be delivered within 3-7 business days</li>

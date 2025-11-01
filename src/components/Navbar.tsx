@@ -77,6 +77,12 @@ export default function Navbar() {
           {/* Desktop actions */}
           <div className="hidden lg:flex lg:items-center lg:gap-x-4">
             <a
+              href="/track-order"
+              className="text-sm font-semibold leading-6 text-charcoal hover:text-cream-300 transition-colors"
+            >
+              Track Order
+            </a>
+            <a
               href="/cart"
               className="relative p-2 text-charcoal hover:text-cream-300 transition-colors"
             >
@@ -181,6 +187,15 @@ export default function Navbar() {
                       {getTotalItems()}
                     </span>
                   )}
+                </a>
+
+                {/* Track Order */}
+                <a
+                  href="/track-order"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center py-4 px-4 text-base font-medium text-charcoal hover:bg-cream-50 rounded-xl transition-all duration-200 border border-transparent hover:border-cream-200"
+                >
+                  📦 Track Order
                 </a>
 
                 {/* Admin Link */}

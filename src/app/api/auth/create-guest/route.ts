@@ -82,6 +82,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Send password setup email using our own SMTP
+    try {
+      // Generate a password reset link using Supabase
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: email,
+        options: {
+          redirectTo: `https://lumidumi.com/reset-password`
+        }
+      })
+
+      if (linkError) {
+        console.error('Failed to generate password reset link:', linkError)
+      } else if (linkData?.properties?.action_link) {
+        // Send email using our own SMTP service
+        const emailResponse = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://lumidumi.com'}/api/auth/send-password-setup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            name: `${firstName} ${lastName}`,
+            resetLink: linkData.properties.action_link
+          }),
+        })
+
+        if (emailResponse.ok) {
+          console.log('✅ Password setup email sent via SMTP to:', email)
+        } else {
+          console.error('❌ Failed to send password setup email via SMTP')
+        }
+      }
+    } catch (emailError) {
+      console.error('Error sending password setup email:', emailError)
+    }
+
     console.log('✅ Guest account created successfully:', email)
 
     return NextResponse.json({

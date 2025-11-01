@@ -514,7 +514,6 @@ export async function getAllOrders() {
     .from('orders')
     .select(`
       *,
-      profile:profiles(*),
       order_items(
         *,
         product:products(*)

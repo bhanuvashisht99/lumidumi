@@ -179,8 +179,8 @@ export default function CheckoutPage() {
 
       const orderData = await createRazorpayOrder()
 
-      // Check if Razorpay key is available
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      // Check if Razorpay key is available and clean it
+      const razorpayKey = (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_Ra0RjypHjpQHUZ').replace(/\s/g, '')
       if (!razorpayKey) {
         alert('Payment gateway not configured. Please contact support.')
         setLoading(false)
@@ -207,6 +207,16 @@ export default function CheckoutPage() {
           card: true,
           netbanking: true,
           wallet: true
+        },
+        config: {
+          display: {
+            hide: [
+              {
+                method: 'upi',
+                flows: ['qr']
+              }
+            ]
+          }
         },
         handler: async function (response: any) {
           // Payment successful
@@ -261,18 +271,25 @@ export default function CheckoutPage() {
               }),
             })
 
-            if (verifyResponse.ok) {
+            const verifyData = await verifyResponse.json()
+            console.log('💳 Payment verification response:', verifyData)
+
+            if (verifyResponse.ok && verifyData.verified) {
               // Clear cart and redirect to success page
+              console.log('✅ Payment verified successfully, clearing cart and redirecting')
               clearCart()
               const successUrl = `/order-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&amount=${orderData.amount}`
               if (isGuestAccount) {
                 // Add guest account info to success page
-                router.push(`${successUrl}&guest=true`)
+                console.log('🔄 Redirecting guest user to success page')
+                window.location.href = `${successUrl}&guest=true`
               } else {
-                router.push(successUrl)
+                console.log('🔄 Redirecting registered user to success page')
+                window.location.href = successUrl
               }
             } else {
-              throw new Error('Payment verification failed')
+              console.error('❌ Payment verification failed:', verifyData)
+              throw new Error(`Payment verification failed: ${verifyData.error || 'Unknown error'}`)
             }
           } catch (error) {
             console.error('Payment verification error:', error)
@@ -281,6 +298,11 @@ export default function CheckoutPage() {
         },
         modal: {
           ondismiss: function() {
+            setLoading(false)
+          },
+          on_payment_failed: function(response: any) {
+            console.error('Payment failed:', response)
+            alert('Payment failed. Please try again or use a different payment method.')
             setLoading(false)
           }
         }
