@@ -73,6 +73,8 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (cartLoaded && items.length === 0) {
+      console.log('🛒 Cart is empty, redirecting to cart page')
+      console.log('🛒 Cart state:', { cartLoaded, itemsLength: items.length })
       router.push('/cart')
     }
   }, [items, router, cartLoaded])
@@ -372,21 +374,24 @@ export default function CheckoutPage() {
                 }
               }
 
-              // Clear cart and redirect to success page
-              console.log('🧹 Clearing cart...')
-              clearCart()
-
+              // Generate success URL first
               const successUrl = `/order-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&amount=${orderData.amount}`
               console.log('🔗 Generated success URL:', successUrl)
+
+              // Clear cart and redirect to success page
+              console.log('🧹 Clearing cart and redirecting...')
+              clearCart()
 
               if (isGuestAccount) {
                 // Add guest account info to success page
                 const finalUrl = `${successUrl}&guest=true`
                 console.log('🔄 Redirecting guest user to success page:', finalUrl)
-                window.location.href = finalUrl
+                // Use immediate redirect to prevent re-render
+                window.location.replace(finalUrl)
               } else {
                 console.log('🔄 Redirecting registered user to success page:', successUrl)
-                window.location.href = successUrl
+                // Use immediate redirect to prevent re-render
+                window.location.replace(successUrl)
               }
             } else {
               console.error('❌ Payment verification failed:', verifyData)
@@ -402,11 +407,19 @@ export default function CheckoutPage() {
         },
         modal: {
           ondismiss: function() {
+            console.log('🚪 Razorpay modal dismissed by user')
             setLoading(false)
           },
           on_payment_failed: function(response: any) {
-            console.error('Payment failed:', response)
-            alert('Payment failed. Please try again or use a different payment method.')
+            console.error('❌ Razorpay payment failed:', response)
+            console.error('❌ Failed payment details:', {
+              code: response.error?.code,
+              description: response.error?.description,
+              source: response.error?.source,
+              step: response.error?.step,
+              reason: response.error?.reason
+            })
+            alert(`Payment failed: ${response.error?.description || 'Unknown error'}. Please try again or use a different payment method.`)
             setLoading(false)
           }
         }
