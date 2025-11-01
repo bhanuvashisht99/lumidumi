@@ -163,14 +163,25 @@ export async function POST(request: NextRequest) {
       })
 
       console.log('📧 Email service response status:', emailResponse.status)
+      console.log('📧 Email service response headers:', Object.fromEntries(emailResponse.headers.entries()))
 
       if (emailResponse.ok) {
         const emailResult = await emailResponse.json()
         console.log('✅ Order confirmation email sent successfully:', emailResult)
+        console.log('✅ Email service returned success with data:', JSON.stringify(emailResult, null, 2))
       } else {
         const errorText = await emailResponse.text()
         console.error('❌ Failed to send order confirmation email:', emailResponse.status, errorText)
+        console.error('❌ Email service response body:', errorText)
         console.error('❌ Email service headers:', Object.fromEntries(emailResponse.headers.entries()))
+
+        // Try to parse as JSON to get more details
+        try {
+          const errorJson = JSON.parse(errorText)
+          console.error('❌ Parsed email error:', errorJson)
+        } catch (parseError) {
+          console.error('❌ Could not parse email error as JSON')
+        }
       }
     } catch (emailError) {
       console.error('❌ Error sending order confirmation email:', emailError)
