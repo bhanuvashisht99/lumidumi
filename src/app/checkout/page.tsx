@@ -252,13 +252,27 @@ export default function CheckoutPage() {
         },
         handler: async function (response: any) {
           // Payment successful
+          console.log('🎉 Razorpay payment successful, processing verification...')
+          console.log('💳 Payment response from Razorpay:', {
+            order_id: response.razorpay_order_id,
+            payment_id: response.razorpay_payment_id,
+            hasSignature: !!response.razorpay_signature
+          })
+
           try {
             // If guest user, create account before processing payment
             let isGuestAccount = false
             if (!user) {
-              console.log('🔄 Creating guest account for order')
+              console.log('🔄 Guest checkout detected - creating guest account')
               try {
                 // Create guest account with phone and email
+                console.log('📞 Creating guest account with:', {
+                  phone: formData.phone,
+                  email: formData.email,
+                  firstName: formData.firstName,
+                  lastName: formData.lastName
+                })
+
                 const guestResponse = await fetch('/api/auth/create-guest', {
                   method: 'POST',
                   headers: {
@@ -272,45 +286,76 @@ export default function CheckoutPage() {
                   }),
                 })
 
+                console.log('📞 Guest account creation response status:', guestResponse.status)
+
                 if (guestResponse.ok) {
                   isGuestAccount = true
-                  console.log('✅ Guest account created successfully')
+                  const guestData = await guestResponse.json()
+                  console.log('✅ Guest account created successfully:', guestData)
                 } else {
-                  console.log('⚠️ Guest account creation failed, proceeding with order')
+                  const errorText = await guestResponse.text()
+                  console.log('⚠️ Guest account creation failed:', guestResponse.status, errorText)
+                  console.log('⚠️ Proceeding with order anyway')
                 }
               } catch (guestError) {
-                console.error('Guest account error:', guestError)
+                console.error('❌ Guest account error:', guestError)
                 // Continue with order even if guest account fails
               }
+            } else {
+              console.log('👤 Authenticated user checkout')
             }
+
+            console.log('🔐 Starting payment verification request...')
+            const verificationPayload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderDetails: {
+                items,
+                customerInfo: formData,
+                total,
+                isGuestOrder: !user,
+                guestAccountCreated: isGuestAccount,
+              },
+            }
+
+            console.log('📋 Verification payload:', {
+              order_id: verificationPayload.razorpay_order_id,
+              payment_id: verificationPayload.razorpay_payment_id,
+              hasSignature: !!verificationPayload.razorpay_signature,
+              total: verificationPayload.orderDetails.total,
+              customerEmail: verificationPayload.orderDetails.customerInfo.email,
+              itemsCount: verificationPayload.orderDetails.items.length,
+              isGuestOrder: verificationPayload.orderDetails.isGuestOrder,
+              guestAccountCreated: verificationPayload.orderDetails.guestAccountCreated
+            })
 
             const verifyResponse = await fetch('/api/razorpay/verify-payment', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                orderDetails: {
-                  items,
-                  customerInfo: formData,
-                  total,
-                  isGuestOrder: !user,
-                  guestAccountCreated: isGuestAccount,
-                },
-              }),
+              body: JSON.stringify(verificationPayload),
             })
 
+            console.log('🔐 Payment verification response status:', verifyResponse.status)
+
+            if (!verifyResponse.ok) {
+              const errorText = await verifyResponse.text()
+              console.error('❌ Payment verification request failed:', verifyResponse.status, errorText)
+              throw new Error(`Verification request failed: ${verifyResponse.status} ${errorText}`)
+            }
+
             const verifyData = await verifyResponse.json()
-            console.log('💳 Payment verification response:', verifyData)
+            console.log('💳 Payment verification response data:', verifyData)
 
             if (verifyResponse.ok && verifyData.verified) {
+              console.log('✅ Payment verification successful!')
+
               // Save address to user profile if they're logged in and opted to save
               if (user && saveAddress) {
                 try {
-                  console.log('💾 Saving address to user profile')
+                  console.log('💾 Saving address to user profile...')
                   await updateProfile(user.id, {
                     first_name: formData.firstName,
                     last_name: formData.lastName,
@@ -328,24 +373,31 @@ export default function CheckoutPage() {
               }
 
               // Clear cart and redirect to success page
-              console.log('✅ Payment verified successfully, clearing cart and redirecting')
+              console.log('🧹 Clearing cart...')
               clearCart()
+
               const successUrl = `/order-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&amount=${orderData.amount}`
+              console.log('🔗 Generated success URL:', successUrl)
+
               if (isGuestAccount) {
                 // Add guest account info to success page
-                console.log('🔄 Redirecting guest user to success page')
-                window.location.href = `${successUrl}&guest=true`
+                const finalUrl = `${successUrl}&guest=true`
+                console.log('🔄 Redirecting guest user to success page:', finalUrl)
+                window.location.href = finalUrl
               } else {
-                console.log('🔄 Redirecting registered user to success page')
+                console.log('🔄 Redirecting registered user to success page:', successUrl)
                 window.location.href = successUrl
               }
             } else {
               console.error('❌ Payment verification failed:', verifyData)
+              console.error('❌ Response status:', verifyResponse.status)
+              console.error('❌ Verification result:', verifyData.verified)
               throw new Error(`Payment verification failed: ${verifyData.error || 'Unknown error'}`)
             }
           } catch (error) {
-            console.error('Payment verification error:', error)
-            alert('Payment verification failed. Please contact support.')
+            console.error('❌ Critical error in payment handler:', error)
+            console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+            alert(`Payment verification failed: ${error instanceof Error ? error.message : String(error)}. Please contact support.`)
           }
         },
         modal: {
