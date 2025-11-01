@@ -21,6 +21,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('🔍 Looking for order with ID:', orderId, 'Type:', typeof orderId)
+
     // Get order details
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -38,9 +40,28 @@ export async function POST(request: NextRequest) {
       .eq('id', orderId)
       .single()
 
+    console.log('📊 Order query result:', { order: !!order, error: orderError })
+
+    if (orderError) {
+      console.error('❌ Order query error:', orderError)
+    }
+
     if (orderError || !order) {
+      // Try to find any recent orders to understand the ID format
+      const { data: recentOrders } = await supabase
+        .from('orders')
+        .select('id, customer_email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      console.log('📋 Recent orders for debugging:', recentOrders)
+
       return NextResponse.json(
-        { error: 'Order not found' },
+        {
+          error: 'Order not found',
+          searchedId: orderId,
+          recentOrderIds: recentOrders?.map(o => o.id) || []
+        },
         { status: 404 }
       )
     }
