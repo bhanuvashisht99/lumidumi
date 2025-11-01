@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 interface Order {
   id: string
@@ -38,9 +39,16 @@ export default function MyOrdersPage() {
       setLoading(true)
       setError(null)
 
+      // Get the current session to get the access token
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session?.access_token) {
+        throw new Error('No valid session found')
+      }
+
       const response = await fetch('/api/user/orders', {
         headers: {
-          'Authorization': `Bearer ${user?.access_token || ''}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
       })
 
