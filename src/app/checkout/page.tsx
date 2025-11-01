@@ -61,6 +61,7 @@ export default function CheckoutPage() {
   const [cartLoaded, setCartLoaded] = useState(false)
   const [saveAddress, setSaveAddress] = useState(true)
   const [addressLoaded, setAddressLoaded] = useState(false)
+  const [paymentInProgress, setPaymentInProgress] = useState(false)
 
   // Wait for cart to load from localStorage before checking if empty
   useEffect(() => {
@@ -72,12 +73,12 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
-    if (cartLoaded && items.length === 0) {
+    if (cartLoaded && items.length === 0 && !paymentInProgress) {
       console.log('🛒 Cart is empty, redirecting to cart page')
-      console.log('🛒 Cart state:', { cartLoaded, itemsLength: items.length })
+      console.log('🛒 Cart state:', { cartLoaded, itemsLength: items.length, paymentInProgress })
       router.push('/cart')
     }
-  }, [items, router, cartLoaded])
+  }, [items, router, cartLoaded, paymentInProgress])
 
   // Load saved address data for logged-in users
   useEffect(() => {
@@ -261,6 +262,9 @@ export default function CheckoutPage() {
             hasSignature: !!response.razorpay_signature
           })
 
+          // Set payment in progress to prevent cart redirect
+          setPaymentInProgress(true)
+
           try {
             // If guest user, create account before processing payment
             let isGuestAccount = false
@@ -387,12 +391,28 @@ export default function CheckoutPage() {
                 // Add guest account info to success page
                 const finalUrl = `${successUrl}&guest=true`
                 console.log('🔄 Redirecting guest user to success page:', finalUrl)
-                // Use immediate redirect to prevent re-render
-                window.location.replace(finalUrl)
+
+                // Mobile-specific redirect handling
+                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                  console.log('📱 Mobile detected - using location.href for better compatibility')
+                  setTimeout(() => {
+                    window.location.href = finalUrl
+                  }, 100)
+                } else {
+                  window.location.replace(finalUrl)
+                }
               } else {
                 console.log('🔄 Redirecting registered user to success page:', successUrl)
-                // Use immediate redirect to prevent re-render
-                window.location.replace(successUrl)
+
+                // Mobile-specific redirect handling
+                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                  console.log('📱 Mobile detected - using location.href for better compatibility')
+                  setTimeout(() => {
+                    window.location.href = successUrl
+                  }, 100)
+                } else {
+                  window.location.replace(successUrl)
+                }
               }
             } else {
               console.error('❌ Payment verification failed:', verifyData)
@@ -403,6 +423,7 @@ export default function CheckoutPage() {
           } catch (error) {
             console.error('❌ Critical error in payment handler:', error)
             console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+            setPaymentInProgress(false) // Reset payment flag on error
             alert(`Payment verification failed: ${error instanceof Error ? error.message : String(error)}. Please contact support.`)
           }
         },
@@ -410,6 +431,7 @@ export default function CheckoutPage() {
           ondismiss: function() {
             console.log('🚪 Razorpay modal dismissed by user')
             setLoading(false)
+            setPaymentInProgress(false) // Reset payment flag
           },
           on_payment_failed: function(response: any) {
             console.error('❌ Razorpay payment failed:', response)
@@ -422,6 +444,7 @@ export default function CheckoutPage() {
             })
             alert(`Payment failed: ${response.error?.description || 'Unknown error'}. Please try again or use a different payment method.`)
             setLoading(false)
+            setPaymentInProgress(false) // Reset payment flag
           }
         }
       }
