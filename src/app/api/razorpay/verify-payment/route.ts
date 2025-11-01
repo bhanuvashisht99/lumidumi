@@ -147,9 +147,8 @@ export async function POST(request: NextRequest) {
     // Send order confirmation email
     console.log('📧 Starting email confirmation process...')
     try {
-      const baseUrl = process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXTAUTH_URL || 'https://lumidumi.com'
+      // Use production URL for consistency and reliability
+      const baseUrl = 'https://lumidumi.com'
 
       console.log('🌐 Email service base URL:', baseUrl)
       console.log('📧 Sending order confirmation email for order:', order.id, 'to:', orderDetails.customerInfo.email)

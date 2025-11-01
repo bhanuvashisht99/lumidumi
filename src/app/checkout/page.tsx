@@ -374,9 +374,10 @@ export default function CheckoutPage() {
                 }
               }
 
-              // Generate success URL first
-              const successUrl = `/order-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&amount=${orderData.amount}`
+              // Generate success URL first (use database order ID from verification response)
+              const successUrl = `/order-success?payment_id=${response.razorpay_payment_id}&order_id=${verifyData.order_id}&amount=${orderData.amount}`
               console.log('🔗 Generated success URL:', successUrl)
+              console.log('🔗 Using database order ID:', verifyData.order_id, 'vs Razorpay order ID:', response.razorpay_order_id)
 
               // Clear cart and redirect to success page
               console.log('🧹 Clearing cart and redirecting...')

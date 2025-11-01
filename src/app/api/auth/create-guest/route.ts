@@ -97,9 +97,7 @@ export async function POST(request: NextRequest) {
         console.error('Failed to generate password reset link:', linkError)
       } else if (linkData?.properties?.action_link) {
         // Send email using our email service
-        const baseUrl = process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : 'https://lumidumi.com'
+        const baseUrl = 'https://lumidumi.com'
 
         console.log('📧 Sending password setup email to:', email, 'via URL:', `${baseUrl}/api/auth/send-password-setup`)
 
