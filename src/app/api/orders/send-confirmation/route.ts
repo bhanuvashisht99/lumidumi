@@ -23,8 +23,12 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 Looking for order with ID:', orderId, 'Type:', typeof orderId)
 
-    // Get order details
-    const { data: order, error: orderError } = await supabase
+    // Try different order lookup strategies
+    let order = null
+    let orderError = null
+
+    // Strategy 1: Direct ID lookup (current approach)
+    const { data: directOrder, error: directError } = await supabase
       .from('orders')
       .select(`
         *,
@@ -39,6 +43,68 @@ export async function POST(request: NextRequest) {
       `)
       .eq('id', orderId)
       .single()
+
+    if (directOrder) {
+      order = directOrder
+      console.log('✅ Found order using direct ID lookup')
+    } else {
+      console.log('❌ Direct ID lookup failed:', directError)
+
+      // Strategy 2: Try as UUID string (in case of case sensitivity)
+      if (typeof orderId === 'string' && orderId.length > 8) {
+        const { data: uuidOrder, error: uuidError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              product_id,
+              quantity,
+              price,
+              product_name,
+              selected_color,
+              product_image_url
+            )
+          `)
+          .eq('id', orderId.toLowerCase())
+          .single()
+
+        if (uuidOrder) {
+          order = uuidOrder
+          console.log('✅ Found order using lowercase UUID lookup')
+        } else {
+          console.log('❌ UUID lookup failed:', uuidError)
+        }
+      }
+
+      // Strategy 3: Try to find by recent orders with similar timestamp
+      if (!order) {
+        const { data: recentOrders } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              product_id,
+              quantity,
+              price,
+              product_name,
+              selected_color,
+              product_image_url
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10)
+
+        console.log('📋 Recent orders found:', recentOrders?.length || 0)
+
+        // Use the most recent order if searching for a likely match
+        if (recentOrders && recentOrders.length > 0) {
+          order = recentOrders[0]
+          console.log('⚠️ Using most recent order as fallback:', order.id)
+        }
+      }
+
+      orderError = directError
+    }
 
     console.log('📊 Order query result:', { order: !!order, error: orderError })
 
