@@ -37,6 +37,8 @@ export default function ProductDetailPage() {
   const [currentImages, setCurrentImages] = useState<string[]>([])
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null)
   const [currentPrice, setCurrentPrice] = useState(0)
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
 
   useEffect(() => {
     if (params.slug) {
@@ -173,6 +175,31 @@ export default function ProductDetailPage() {
     }
   }
 
+  // Touch handlers for mobile swiping
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > 50
+    const isRightSwipe = distance < -50
+
+    if (isLeftSwipe && currentImages.length > 1) {
+      nextImage()
+    }
+    if (isRightSwipe && currentImages.length > 1) {
+      prevImage()
+    }
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -220,17 +247,23 @@ export default function ProductDetailPage() {
           {/* Image Gallery */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="aspect-square bg-cream-100 rounded-lg overflow-hidden relative group">
+            <div
+              className="aspect-square bg-cream-100 rounded-lg overflow-hidden relative group select-none"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {currentImages.length > 0 ? (
                 <>
                   <img
                     src={currentImages[selectedImageIndex]}
                     alt={`${product.name} - ${selectedColor?.color_name || 'Product'}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover pointer-events-none"
                     onError={(e) => {
                       console.error('Image failed to load:', currentImages[selectedImageIndex])
                       e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2Y1ZjNmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+'
                     }}
+                    draggable={false}
                   />
 
                   {/* Navigation arrows */}
@@ -251,11 +284,17 @@ export default function ProductDetailPage() {
                     </>
                   )}
 
-                  {/* Image counter */}
+                  {/* Image counter and swipe indicator */}
                   {currentImages.length > 1 && (
-                    <div className="absolute bottom-4 right-4 bg-black/70 text-white text-sm px-3 py-1 rounded">
-                      {selectedImageIndex + 1} / {currentImages.length}
-                    </div>
+                    <>
+                      <div className="absolute bottom-4 right-4 bg-black/70 text-white text-sm px-3 py-1 rounded">
+                        {selectedImageIndex + 1} / {currentImages.length}
+                      </div>
+                      {/* Mobile swipe indicator */}
+                      <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1 rounded sm:hidden">
+                        👈 Swipe 👉
+                      </div>
+                    </>
                   )}
                 </>
               ) : (
@@ -265,19 +304,22 @@ export default function ProductDetailPage() {
 
             {/* Thumbnail Gallery */}
             {currentImages.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto">
+              <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
                 {currentImages.map((imageUrl, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                      selectedImageIndex === index ? 'border-cream-300' : 'border-cream-200 hover:border-cream-300'
+                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                      selectedImageIndex === index
+                        ? 'border-cream-300 shadow-md scale-105'
+                        : 'border-cream-200 hover:border-cream-300 active:scale-95'
                     }`}
                   >
                     <img
                       src={imageUrl}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
+                      draggable={false}
                     />
                   </button>
                 ))}
