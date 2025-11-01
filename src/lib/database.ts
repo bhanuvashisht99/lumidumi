@@ -271,7 +271,7 @@ export async function createOrder(orderData: Partial<Order>) {
   return data
 }
 
-export async function getUserOrders(userId: string) {
+export async function getUserOrders(userEmail: string) {
   const { data, error } = await supabase
     .from('orders')
     .select(`
@@ -281,7 +281,7 @@ export async function getUserOrders(userId: string) {
         product:products(*)
       )
     `)
-    .eq('user_id', userId)
+    .eq('customer_email', userEmail)
     .order('created_at', { ascending: false })
 
   if (error) {

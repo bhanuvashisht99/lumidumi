@@ -24,17 +24,19 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/login')
       return
     }
 
-    fetchUserOrders()
-  }, [user, router])
+    if (user) {
+      fetchUserOrders()
+    }
+  }, [user, authLoading, router])
 
   const fetchUserOrders = async () => {
     try {
@@ -104,12 +106,14 @@ export default function MyOrdersPage() {
     })
   }
 
-  if (!user) {
+  if (authLoading || (!user && !authLoading)) {
     return (
       <div className="min-h-screen bg-cream-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cream-300 mx-auto"></div>
-          <p className="mt-4 text-charcoal">Redirecting to login...</p>
+          <p className="mt-4 text-charcoal">
+            {authLoading ? 'Loading...' : 'Redirecting to login...'}
+          </p>
         </div>
       </div>
     )

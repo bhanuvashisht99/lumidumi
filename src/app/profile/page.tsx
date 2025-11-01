@@ -62,7 +62,7 @@ export default function ProfilePage() {
       }
 
       // Load orders
-      const userOrders = await getUserOrders(user.id)
+      const userOrders = await getUserOrders(user.email)
       setOrders(userOrders)
     } catch (error) {
       console.error('Error loading user data:', error)
