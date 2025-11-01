@@ -73,10 +73,19 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
-    if (cartLoaded && items.length === 0 && !paymentInProgress) {
+    // Don't redirect to cart if we're in the middle of a payment process
+    // Also check if we're already on a success page or just completed payment
+    const isOnSuccessPage = typeof window !== 'undefined' && window.location.pathname.includes('order-success')
+    const hasSuccessParams = typeof window !== 'undefined' && window.location.search.includes('payment_id')
+
+    if (cartLoaded && items.length === 0 && !paymentInProgress && !isOnSuccessPage && !hasSuccessParams) {
       console.log('🛒 Cart is empty, redirecting to cart page')
-      console.log('🛒 Cart state:', { cartLoaded, itemsLength: items.length, paymentInProgress })
-      router.push('/cart')
+      console.log('🛒 Cart state:', { cartLoaded, itemsLength: items.length, paymentInProgress, isOnSuccessPage, hasSuccessParams })
+
+      // Add a small delay to prevent race conditions on mobile
+      setTimeout(() => {
+        router.push('/cart')
+      }, 500)
     }
   }, [items, router, cartLoaded, paymentInProgress])
 
@@ -394,10 +403,12 @@ export default function CheckoutPage() {
 
                 // Mobile-specific redirect handling
                 if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                  console.log('📱 Mobile detected - using location.href for better compatibility')
+                  console.log('📱 Mobile detected - using delayed redirect for better compatibility')
+                  // Longer delay for mobile to ensure payment processing completes
                   setTimeout(() => {
+                    console.log('📱 Executing mobile redirect to:', finalUrl)
                     window.location.href = finalUrl
-                  }, 100)
+                  }, 500)
                 } else {
                   window.location.replace(finalUrl)
                 }
@@ -406,10 +417,12 @@ export default function CheckoutPage() {
 
                 // Mobile-specific redirect handling
                 if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                  console.log('📱 Mobile detected - using location.href for better compatibility')
+                  console.log('📱 Mobile detected - using delayed redirect for better compatibility')
+                  // Longer delay for mobile to ensure payment processing completes
                   setTimeout(() => {
+                    console.log('📱 Executing mobile redirect to:', successUrl)
                     window.location.href = successUrl
-                  }, 100)
+                  }, 500)
                 } else {
                   window.location.replace(successUrl)
                 }
