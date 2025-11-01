@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXTAUTH_URL || 'https://lumidumi.com'
 
+      console.log('📧 Sending order confirmation email for order:', order.id, 'via URL:', `${baseUrl}/api/orders/send-confirmation`)
+
       const emailResponse = await fetch(`${baseUrl}/api/orders/send-confirmation`, {
         method: 'POST',
         headers: {
@@ -126,9 +128,11 @@ export async function POST(request: NextRequest) {
       })
 
       if (emailResponse.ok) {
-        console.log('✅ Order confirmation email sent successfully')
+        const emailResult = await emailResponse.json()
+        console.log('✅ Order confirmation email sent successfully:', emailResult)
       } else {
-        console.error('❌ Failed to send order confirmation email')
+        const errorText = await emailResponse.text()
+        console.error('❌ Failed to send order confirmation email:', emailResponse.status, errorText)
       }
     } catch (emailError) {
       console.error('❌ Error sending order confirmation email:', emailError)

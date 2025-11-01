@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     console.log('📤 Sending test email via Resend to:', testEmail)
 
     const result = await resend.emails.send({
-      from: 'Lumidumi <team@lumidumi.com>',
+      from: 'Lumidumi <noreply@lumidumi.com>',
       to: [testEmail],
       subject: 'Test Email from Lumidumi via Resend - ' + new Date().toLocaleString(),
       html: `

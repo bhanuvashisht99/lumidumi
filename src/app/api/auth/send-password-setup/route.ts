@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 Sending password setup email via Resend to:', email)
 
     const result = await resend.emails.send({
-      from: 'Lumidumi <team@lumidumi.com>',
+      from: 'Lumidumi <noreply@lumidumi.com>',
       to: [email],
       subject: 'Set Up Your Password - Lumidumi Account',
       html: emailHtml,

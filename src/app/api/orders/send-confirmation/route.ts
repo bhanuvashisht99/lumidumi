@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 Sending order confirmation email via Resend to:', order.customer_email)
 
     const result = await resend.emails.send({
-      from: 'Lumidumi <team@lumidumi.com>',
+      from: 'Lumidumi <noreply@lumidumi.com>',
       to: [order.customer_email],
       subject: `Order Confirmation #${order.id} - Lumidumi`,
       html: emailHtml,

@@ -96,8 +96,14 @@ export async function POST(request: NextRequest) {
       if (linkError) {
         console.error('Failed to generate password reset link:', linkError)
       } else if (linkData?.properties?.action_link) {
-        // Send email using our own SMTP service
-        const emailResponse = await fetch(`${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://lumidumi.com'}/api/auth/send-password-setup`, {
+        // Send email using our email service
+        const baseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : 'https://lumidumi.com'
+
+        console.log('📧 Sending password setup email to:', email, 'via URL:', `${baseUrl}/api/auth/send-password-setup`)
+
+        const emailResponse = await fetch(`${baseUrl}/api/auth/send-password-setup`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -110,9 +116,11 @@ export async function POST(request: NextRequest) {
         })
 
         if (emailResponse.ok) {
-          console.log('✅ Password setup email sent via SMTP to:', email)
+          const emailResult = await emailResponse.json()
+          console.log('✅ Password setup email sent successfully to:', email, emailResult)
         } else {
-          console.error('❌ Failed to send password setup email via SMTP')
+          const errorText = await emailResponse.text()
+          console.error('❌ Failed to send password setup email:', emailResponse.status, errorText)
         }
       }
     } catch (emailError) {
