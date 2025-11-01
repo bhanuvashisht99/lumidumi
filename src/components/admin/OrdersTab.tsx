@@ -147,7 +147,7 @@ export default function OrdersTab() {
                           <span key={idx}>
                             {item.product_name || 'Product'}
                             {item.selected_color && ` (${item.selected_color})`}
-                            {idx < Math.min(order.order_items.length, 2) - 1 && ', '}
+                            {idx < Math.min(order.order_items?.length || 0, 2) - 1 && ', '}
                           </span>
                         ))}
                         {order.order_items.length > 2 && <span> +{order.order_items.length - 2} more</span>}
