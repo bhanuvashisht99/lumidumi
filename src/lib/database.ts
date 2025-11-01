@@ -81,6 +81,11 @@ export interface Profile {
   first_name?: string
   last_name?: string
   phone?: string
+  address?: string
+  city?: string
+  state?: string
+  pincode?: string
+  country?: string
   created_at: string
   updated_at: string
 }

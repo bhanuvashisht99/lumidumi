@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { getProfile, updateProfile } from '@/lib/database'
 
 declare global {
   interface Window {
@@ -58,6 +59,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [cartLoaded, setCartLoaded] = useState(false)
+  const [saveAddress, setSaveAddress] = useState(true)
+  const [addressLoaded, setAddressLoaded] = useState(false)
 
   // Wait for cart to load from localStorage before checking if empty
   useEffect(() => {
@@ -73,6 +76,35 @@ export default function CheckoutPage() {
       router.push('/cart')
     }
   }, [items, router, cartLoaded])
+
+  // Load saved address data for logged-in users
+  useEffect(() => {
+    const loadSavedAddress = async () => {
+      if (user && !addressLoaded) {
+        try {
+          const profile = await getProfile(user.id)
+          if (profile && typeof profile === 'object') {
+            setFormData(prev => ({
+              ...prev,
+              firstName: (profile as any).first_name || '',
+              lastName: (profile as any).last_name || '',
+              phone: (profile as any).phone || '',
+              address: (profile as any).address || '',
+              city: (profile as any).city || '',
+              state: (profile as any).state || '',
+              pincode: (profile as any).pincode || ''
+            }))
+          }
+        } catch (error) {
+          console.error('Error loading saved address:', error)
+        } finally {
+          setAddressLoaded(true)
+        }
+      }
+    }
+
+    loadSavedAddress()
+  }, [user, addressLoaded])
 
   useEffect(() => {
     // Load Razorpay script
@@ -275,6 +307,26 @@ export default function CheckoutPage() {
             console.log('💳 Payment verification response:', verifyData)
 
             if (verifyResponse.ok && verifyData.verified) {
+              // Save address to user profile if they're logged in and opted to save
+              if (user && saveAddress) {
+                try {
+                  console.log('💾 Saving address to user profile')
+                  await updateProfile(user.id, {
+                    first_name: formData.firstName,
+                    last_name: formData.lastName,
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city,
+                    state: formData.state,
+                    pincode: formData.pincode
+                  })
+                  console.log('✅ Address saved successfully')
+                } catch (addressError) {
+                  console.error('⚠️ Failed to save address:', addressError)
+                  // Don't block order completion if address saving fails
+                }
+              }
+
               // Clear cart and redirect to success page
               console.log('✅ Payment verified successfully, clearing cart and redirecting')
               clearCart()
@@ -535,6 +587,22 @@ export default function CheckoutPage() {
                   </label>
                 </div>
                 {errors.agreeToPrivacy && <p className="text-red-500 text-xs">{errors.agreeToPrivacy}</p>}
+
+                {/* Address saving option for logged-in users */}
+                {user && (
+                  <div className="flex items-start space-x-2">
+                    <input
+                      type="checkbox"
+                      name="saveAddress"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                      className="mt-1"
+                    />
+                    <label className="text-sm text-charcoal">
+                      Save this address to my profile for future orders
+                    </label>
+                  </div>
+                )}
               </div>
             </form>
           </div>
