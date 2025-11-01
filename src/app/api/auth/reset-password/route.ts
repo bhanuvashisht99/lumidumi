@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { Resend } from 'resend'
+
+// Create Resend client
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,8 +59,9 @@ export async function POST(request: NextRequest) {
       <html>
         <body style="font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #2C2C2C; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #FEFCF8;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2C2C2C; margin: 0; font-family: 'Playfair Display', serif; font-size: 28px;">🕯️ Lumidumi</h1>
-            <p style="color: #2C2C2C; margin: 5px 0; opacity: 0.7;">Handcrafted Candles</p>
+            <img src="https://lumidumi.com/images/Lumidumi.png" alt="Lumidumi" style="width: 80px; height: 80px; margin-bottom: 15px; border-radius: 12px;" />
+            <h1 style="color: #2C2C2C; margin: 0; font-family: 'Playfair Display', serif; font-size: 28px;">Lumidumi</h1>
+            <p style="color: #2C2C2C; margin: 5px 0; opacity: 0.7;">Handcrafted Candles Made with Love</p>
           </div>
 
           <div style="background: #F7F3E9; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #E8DCC0;">
@@ -81,29 +86,18 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    // Send email via Resend API
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'Lumidumi <noreply@lumidumi.com>',
-        to: [email],
-        subject: 'Reset Your Lumidumi Password',
-        html: emailHtml,
-      }),
+    // Send email via Resend
+    console.log('📧 Sending password reset email via Resend to:', email)
+
+    const result = await resend.emails.send({
+      from: 'Lumidumi <team@lumidumi.com>',
+      to: [email],
+      subject: 'Reset Your Lumidumi Password',
+      html: emailHtml,
     })
 
-    if (!resendResponse.ok) {
-      const errorData = await resendResponse.text()
-      console.error('Resend API error:', errorData)
-      return NextResponse.json(
-        { error: 'Failed to send reset email' },
-        { status: 500 }
-      )
-    }
+    console.log('✅ Password reset email sent successfully via Resend!')
+    console.log('📨 Email result:', result)
 
     return NextResponse.json(
       { success: true, message: 'Password reset email sent successfully!' },
@@ -111,9 +105,12 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('Password reset error:', error)
+    console.error('❌ Password reset email failed:', error)
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      {
+        error: 'An unexpected error occurred',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }

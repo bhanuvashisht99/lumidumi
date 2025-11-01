@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useSearchParams } from 'next/navigation'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { CheckCircleIcon, TruckIcon, ClockIcon } from '@heroicons/react/24/solid'
 import { CubeIcon } from '@heroicons/react/24/outline'
@@ -32,9 +34,28 @@ export default function TrackOrderPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [totalFound, setTotalFound] = useState(0)
+  const { user } = useAuth()
+  const searchParams = useSearchParams()
 
-  const handleTrackOrder = async (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
+    // Auto-fill user email if logged in
+    if (user?.email) {
+      setEmail(user.email)
+    }
+
+    // Auto-fill order ID from URL if provided (from My Orders page)
+    const orderIdFromUrl = searchParams.get('id')
+    if (orderIdFromUrl) {
+      setOrderId(orderIdFromUrl)
+      // Auto-search if we have both email and order ID
+      if (user?.email) {
+        handleTrackOrder()
+      }
+    }
+  }, [user, searchParams])
+
+  const handleTrackOrder = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     setLoading(true)
     setError('')
     setOrder(null)
@@ -129,6 +150,20 @@ export default function TrackOrderPage() {
           <p className="text-lg text-charcoal/70">
             Enter any of the following to find your order: email, mobile number, or order ID
           </p>
+
+          {user && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm mb-2">
+                💡 Logged in as {user.email}
+              </p>
+              <a
+                href="/my-orders"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium underline"
+              >
+                View all your orders in My Orders →
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Search Form */}
