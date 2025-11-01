@@ -48,7 +48,7 @@ export default function CustomersTab() {
       }
 
       // Get order counts for registered customers
-      const registeredCustomers = await Promise.all((profileData || []).map(async (profile) => {
+      const registeredCustomers = await Promise.all((profileData || []).map(async (profile: any) => {
         const { count } = await supabase
           .from('orders')
           .select('*', { count: 'exact', head: true })
@@ -65,7 +65,7 @@ export default function CustomersTab() {
         return {
           ...profile,
           order_count: count || 0,
-          latest_order: latestOrder?.created_at || null
+          latest_order: (latestOrder as any)?.created_at || null
         }
       }))
 
@@ -83,7 +83,7 @@ export default function CustomersTab() {
       // Group guest orders by email to get unique customers with stats
       const guestCustomerMap = new Map<string, GuestCustomer>()
 
-      guestOrders?.forEach(order => {
+      guestOrders?.forEach((order: any) => {
         const existing = guestCustomerMap.get(order.customer_email)
         if (existing) {
           existing.order_count += 1
