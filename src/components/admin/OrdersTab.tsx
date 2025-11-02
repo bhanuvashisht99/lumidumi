@@ -253,7 +253,7 @@ export default function OrdersTab() {
                     <h4 className="font-medium text-charcoal">Order Information</h4>
                     <button
                       onClick={() => setShowTrackingForm(!showTrackingForm)}
-                      className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                      className="text-sm bg-cream-600 text-white px-3 py-1 rounded-lg hover:bg-cream-700 transition-colors font-medium"
                       disabled={isUpdatingStatus}
                     >
                       📝 Update Status
