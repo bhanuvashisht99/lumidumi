@@ -1,30 +1,23 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getAllOrders } from '@/lib/database'
-import { supabase } from '@/lib/supabase'
+import { getAllOrders, Order } from '@/lib/database'
 
-interface Order {
-  id: string
-  status: string
-  total_amount: number
-  created_at: string
+interface OrderWithExtras extends Order {
   customer_name: string
   customer_email: string
   customer_phone: string
-  shipping_address?: any
   razorpay_payment_id?: string
-  order_items?: any[]
   tracking_number?: string
   tracking_url?: string
   status_updated_at?: string
 }
 
 export default function OrdersTab() {
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderWithExtras[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithExtras | null>(null)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [showTrackingForm, setShowTrackingForm] = useState(false)
 
@@ -46,7 +39,7 @@ export default function OrdersTab() {
     try {
       setIsUpdatingStatus(true)
 
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, string | null> = {
         status: newStatus,
         status_updated_at: new Date().toISOString()
       }
@@ -58,12 +51,21 @@ export default function OrdersTab() {
         updateData.tracking_url = trackingData.trackingUrl
       }
 
-      const { error } = await supabase
-        .from('orders')
-        .update(updateData as any)
-        .eq('id', orderId)
+      const response = await fetch('/api/admin/update-order-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId,
+          updateData
+        }),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update order status')
+      }
 
       // Update local state
       setOrders(prevOrders =>
