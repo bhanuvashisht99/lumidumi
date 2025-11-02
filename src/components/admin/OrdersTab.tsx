@@ -499,7 +499,7 @@ function TrackingForm({ currentStatus, currentTracking, onUpdate, onCancel, isLo
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 bg-cream-600 text-white px-4 py-2 rounded-lg hover:bg-cream-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold shadow-md border-2 border-blue-600"
         >
           {isLoading ? 'Updating...' : 'Update Order'}
         </button>
@@ -507,7 +507,7 @@ function TrackingForm({ currentStatus, currentTracking, onUpdate, onCancel, isLo
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="px-4 py-2 text-charcoal/60 hover:text-charcoal transition-colors text-sm"
+          className="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors text-sm font-medium rounded-lg border border-gray-300"
         >
           Cancel
         </button>
