@@ -83,8 +83,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Send password setup email using our own SMTP
+    console.log('🔑 Starting password setup email process for:', email)
     try {
       // Generate a password reset link using Supabase
+      console.log('🔗 Generating password reset link via Supabase...')
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email: email,
@@ -93,13 +95,24 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      console.log('🔗 Link generation result:', {
+        success: !!linkData,
+        error: !!linkError,
+        hasActionLink: !!linkData?.properties?.action_link
+      })
+
       if (linkError) {
-        console.error('Failed to generate password reset link:', linkError)
+        console.error('❌ Failed to generate password reset link:', linkError)
       } else if (linkData?.properties?.action_link) {
         // Send email using our email service
         const baseUrl = 'https://lumidumi.com'
 
         console.log('📧 Sending password setup email to:', email, 'via URL:', `${baseUrl}/api/auth/send-password-setup`)
+        console.log('📧 Email payload:', {
+          email: email,
+          name: `${firstName} ${lastName}`,
+          hasResetLink: !!linkData.properties.action_link
+        })
 
         const emailResponse = await fetch(`${baseUrl}/api/auth/send-password-setup`, {
           method: 'POST',
@@ -113,16 +126,22 @@ export async function POST(request: NextRequest) {
           }),
         })
 
+        console.log('📧 Email service response status:', emailResponse.status)
+
         if (emailResponse.ok) {
           const emailResult = await emailResponse.json()
           console.log('✅ Password setup email sent successfully to:', email, emailResult)
         } else {
           const errorText = await emailResponse.text()
           console.error('❌ Failed to send password setup email:', emailResponse.status, errorText)
+          console.error('❌ Email service error details:', errorText)
         }
+      } else {
+        console.error('❌ No action link generated in link data:', linkData)
       }
     } catch (emailError) {
-      console.error('Error sending password setup email:', emailError)
+      console.error('❌ Critical error in password setup email process:', emailError)
+      console.error('❌ Error stack:', emailError instanceof Error ? emailError.stack : 'No stack trace')
     }
 
     console.log('✅ Guest account created successfully:', email)

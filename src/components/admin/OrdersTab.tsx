@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getAllOrders } from '@/lib/database'
+import { supabase } from '@/lib/supabase'
 
 interface Order {
   id: string
@@ -14,6 +15,9 @@ interface Order {
   shipping_address?: any
   razorpay_payment_id?: string
   order_items?: any[]
+  tracking_number?: string
+  tracking_url?: string
+  status_updated_at?: string
 }
 
 export default function OrdersTab() {
@@ -21,6 +25,8 @@ export default function OrdersTab() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [showTrackingForm, setShowTrackingForm] = useState(false)
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -35,6 +41,56 @@ export default function OrdersTab() {
       setLoading(false)
     }
   }, [])
+
+  const updateOrderStatus = async (orderId: string, newStatus: string, trackingData?: { trackingNumber?: string; trackingUrl?: string }) => {
+    try {
+      setIsUpdatingStatus(true)
+
+      const updateData: Record<string, any> = {
+        status: newStatus,
+        status_updated_at: new Date().toISOString()
+      }
+
+      if (trackingData?.trackingNumber) {
+        updateData.tracking_number = trackingData.trackingNumber
+      }
+      if (trackingData?.trackingUrl) {
+        updateData.tracking_url = trackingData.trackingUrl
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData as any)
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      // Update local state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId
+            ? { ...order, ...updateData }
+            : order
+        )
+      )
+
+      // Update selected order if it's the one being updated
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(prev => prev ? { ...prev, ...updateData } : null)
+      }
+
+      setShowTrackingForm(false)
+
+      // Show success message
+      alert(`Order status updated to ${newStatus}`)
+
+    } catch (error) {
+      console.error('Error updating order status:', error)
+      alert('Failed to update order status')
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -191,11 +247,43 @@ export default function OrdersTab() {
               <div className="space-y-6">
                 {/* Order Status & Payment */}
                 <div className="bg-cream-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-charcoal mb-3">Order Information</h4>
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-charcoal">Order Information</h4>
+                    <button
+                      onClick={() => setShowTrackingForm(!showTrackingForm)}
+                      className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                      disabled={isUpdatingStatus}
+                    >
+                      📝 Update Status
+                    </button>
+                  </div>
+
+                  {/* Status Update Form */}
+                  {showTrackingForm && (
+                    <div className="bg-white p-4 rounded-lg border mb-4">
+                      <h5 className="font-medium text-charcoal mb-3">Update Order Status</h5>
+                      <TrackingForm
+                        currentStatus={selectedOrder.status}
+                        currentTracking={{
+                          trackingNumber: selectedOrder.tracking_number || '',
+                          trackingUrl: selectedOrder.tracking_url || ''
+                        }}
+                        onUpdate={(status, trackingData) => updateOrderStatus(selectedOrder.id, status, trackingData)}
+                        onCancel={() => setShowTrackingForm(false)}
+                        isLoading={isUpdatingStatus}
+                      />
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-charcoal/60">Status:</span>
                       <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
+                      {selectedOrder.status_updated_at && (
+                        <p className="text-xs text-charcoal/50 mt-1">
+                          Updated: {formatDateTime(selectedOrder.status_updated_at)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <span className="text-charcoal/60">Total Amount:</span>
@@ -212,6 +300,34 @@ export default function OrdersTab() {
                       </div>
                     )}
                   </div>
+
+                  {/* Tracking Information */}
+                  {(selectedOrder.tracking_number || selectedOrder.tracking_url) && (
+                    <div className="mt-4 pt-4 border-t border-cream-200">
+                      <h5 className="font-medium text-charcoal mb-2">Tracking Information</h5>
+                      <div className="space-y-1 text-sm">
+                        {selectedOrder.tracking_number && (
+                          <div>
+                            <span className="text-charcoal/60">Tracking Number:</span>
+                            <p className="font-mono">{selectedOrder.tracking_number}</p>
+                          </div>
+                        )}
+                        {selectedOrder.tracking_url && (
+                          <div>
+                            <span className="text-charcoal/60">Track Package:</span>
+                            <a
+                              href={selectedOrder.tracking_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline block"
+                            >
+                              View Tracking Details →
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Customer Information */}
@@ -276,5 +392,124 @@ export default function OrdersTab() {
         </div>
       )}
     </div>
+  )
+}
+
+interface TrackingFormProps {
+  currentStatus: string
+  currentTracking: {
+    trackingNumber: string
+    trackingUrl: string
+  }
+  onUpdate: (status: string, trackingData?: { trackingNumber?: string; trackingUrl?: string }) => void
+  onCancel: () => void
+  isLoading: boolean
+}
+
+function TrackingForm({ currentStatus, currentTracking, onUpdate, onCancel, isLoading }: TrackingFormProps) {
+  const [selectedStatus, setSelectedStatus] = useState(currentStatus)
+  const [trackingNumber, setTrackingNumber] = useState(currentTracking.trackingNumber)
+  const [trackingUrl, setTrackingUrl] = useState(currentTracking.trackingUrl)
+
+  const statusOptions = [
+    { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'confirmed', label: 'Confirmed', color: 'bg-blue-100 text-blue-800' },
+    { value: 'processing', label: 'Processing', color: 'bg-purple-100 text-purple-800' },
+    { value: 'shipped', label: 'Shipped', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'delivered', label: 'Delivered', color: 'bg-green-100 text-green-800' },
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800' }
+  ]
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onUpdate(selectedStatus, {
+      trackingNumber: trackingNumber.trim() || undefined,
+      trackingUrl: trackingUrl.trim() || undefined
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Status Selection */}
+      <div>
+        <label className="block text-sm font-medium text-charcoal mb-2">
+          Order Status
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {statusOptions.map((status) => (
+            <label
+              key={status.value}
+              className={`relative flex items-center justify-center p-3 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
+                selectedStatus === status.value
+                  ? `${status.color} border-current`
+                  : 'bg-white text-charcoal/60 border-cream-200 hover:bg-cream-50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="status"
+                value={status.value}
+                checked={selectedStatus === status.value}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="sr-only"
+              />
+              {status.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Tracking Information - Show for shipped/delivered status */}
+      {(selectedStatus === 'shipped' || selectedStatus === 'delivered') && (
+        <div className="space-y-3 bg-cream-50 p-3 rounded-lg">
+          <h6 className="font-medium text-charcoal">Tracking Information</h6>
+
+          <div>
+            <label className="block text-sm text-charcoal/60 mb-1">
+              Tracking Number (Optional)
+            </label>
+            <input
+              type="text"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="e.g., 1Z999AA1234567890"
+              className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-500 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-charcoal/60 mb-1">
+              Tracking URL (Optional)
+            </label>
+            <input
+              type="url"
+              value={trackingUrl}
+              onChange={(e) => setTrackingUrl(e.target.value)}
+              placeholder="https://track.delhivery.com/..."
+              className="w-full px-3 py-2 border border-cream-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-500 text-sm"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex space-x-3 pt-2">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 bg-cream-600 text-white px-4 py-2 rounded-lg hover:bg-cream-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+        >
+          {isLoading ? 'Updating...' : 'Update Order'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="px-4 py-2 text-charcoal/60 hover:text-charcoal transition-colors text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   )
 }
