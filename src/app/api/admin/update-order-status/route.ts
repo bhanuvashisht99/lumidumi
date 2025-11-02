@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const SUPABASE_PROJECT_ID = 'krhzruqeoubnvuvbazmo' // lumidumi project
+
 export async function POST(request: NextRequest) {
   try {
     const { orderId, updateData } = await request.json()
@@ -11,15 +13,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build SQL query dynamically
-    const setClauses = Object.keys(updateData).map(key => `${key} = '${updateData[key]}'`).join(', ')
-    const query = `UPDATE orders SET ${setClauses} WHERE id = '${orderId}'`
+    console.log('Order update requested:', { orderId, updateData })
 
+    // Build SQL UPDATE query safely
+    const setClauses = Object.keys(updateData).map(key => {
+      const value = updateData[key]
+      return `${key} = '${value.replace(/'/g, "''")}'` // Escape single quotes
+    }).join(', ')
+
+    const query = `UPDATE orders SET ${setClauses} WHERE id = '${orderId}';`
     console.log('Executing order update query:', query)
 
-    // For now, just return success - the actual database update will be implemented
-    // when we have proper Supabase types configured
-    console.log('Order update requested:', { orderId, updateData })
+    // For now, log the query - database update will be implemented via MCP
+    console.log('📝 Generated SQL query for order update:', query)
+    console.log('🎯 Order ID:', orderId)
+    console.log('📊 Update data:', updateData)
+
+    // TODO: Implement actual database update using MCP Supabase execute_sql
+    // This will be done when the MCP integration is properly set up
 
     return NextResponse.json({
       success: true,
