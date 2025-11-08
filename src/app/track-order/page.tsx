@@ -196,7 +196,7 @@ function TrackOrderContent() {
                   id="mobile"
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 93548 51086"
                   className="w-full px-4 py-3 border border-cream-200 rounded-lg focus:ring-2 focus:ring-cream-300 focus:border-cream-300"
                 />
               </div>

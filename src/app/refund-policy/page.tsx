@@ -40,7 +40,7 @@ export default function RefundPolicyPage() {
             <h2 className="text-2xl font-semibold text-charcoal mb-4">Return Process</h2>
             <p className="text-charcoal/70 mb-4">To initiate a return:</p>
             <ol className="list-decimal pl-6 space-y-2 text-charcoal/70">
-              <li>Contact us at returns@lumidumi.com or +91 98765 43210</li>
+              <li>Contact us at returns@lumidumi.com or +91 93548 51086</li>
               <li>Provide your order number and reason for return</li>
               <li>We'll send you a return authorization and instructions</li>
               <li>Pack items securely in original packaging</li>
@@ -121,7 +121,7 @@ export default function RefundPolicyPage() {
             <div className="mt-4 p-4 bg-cream-50 rounded-lg">
               <p className="font-medium">Customer Service</p>
               <p>Email: returns@lumidumi.com</p>
-              <p>Phone: +91 98765 43210</p>
+              <p>Phone: +91 93548 51086</p>
               <p>Hours: Monday-Friday, 9:00 AM - 6:00 PM IST</p>
               <p>Address: 123 Artisan Lane, Craftsville, CS 12345, India</p>
             </div>

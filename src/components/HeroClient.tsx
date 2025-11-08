@@ -39,12 +39,12 @@ export default function HeroClient({ initialContent }: HeroClientProps) {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="btn-primary">
+              <a href="/products" className="btn-primary text-center">
                 Shop Collection
-              </button>
-              <button className="btn-secondary">
+              </a>
+              <a href="/custom-orders" className="btn-secondary text-center">
                 Custom Orders
-              </button>
+              </a>
             </div>
 
             <div className="grid grid-cols-3 gap-8 pt-8">

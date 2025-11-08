@@ -242,7 +242,7 @@ function generateOrderConfirmationEmail(order: any): string {
             </div>
 
             <div class="footer">
-                <p>Questions about your order? Contact us at support@lumidumi.com or +91 98765 43210</p>
+                <p>Questions about your order? Contact us at support@lumidumi.com or +91 93548 51086</p>
                 <p>Lumidumi - Handcrafted Candles Made with Love</p>
             </div>
         </div>

@@ -189,7 +189,7 @@ export default function CustomOrdersPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300"
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 93548 51086"
                 />
               </div>
             </div>

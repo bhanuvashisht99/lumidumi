@@ -166,8 +166,8 @@ export default function ShippingPolicyPage() {
             <div className="mt-4 p-4 bg-cream-50 rounded-lg">
               <p className="font-medium">Shipping Support</p>
               <p>Email: shipping@lumidumi.com</p>
-              <p>Phone: +91 98765 43210</p>
-              <p>WhatsApp: +91 98765 43210</p>
+              <p>Phone: +91 93548 51086</p>
+              <p>WhatsApp: +91 93548 51086</p>
               <p>Hours: Monday-Saturday, 9:00 AM - 7:00 PM IST</p>
             </div>
           </section>

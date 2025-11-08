@@ -350,6 +350,15 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // Validate admin authentication
+  const authResult = await validateAdminAuth(request)
+  if (!authResult.authorized) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.error?.includes('permissions') ? 403 : 401 }
+    )
+  }
+
   try {
     const { id } = await request.json()
 
@@ -360,20 +369,63 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Delete product using service role (bypasses RLS)
-    const { error } = await supabase
+    console.log('🗑️ Starting cascade delete for product ID:', id)
+
+    // Check if product exists in order_items (this would prevent deletion)
+    const { data: orderItems, error: orderError } = await supabase
+      .from('order_items')
+      .select('id, order_id')
+      .eq('product_id', id)
+      .limit(1)
+
+    if (orderError && orderError.code !== 'PGRST116') {
+      console.error('Error checking order items:', orderError)
+    }
+
+    if (orderItems && orderItems.length > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete product that has been ordered. Consider marking it as inactive instead.' },
+        { status: 400 }
+      )
+    }
+
+    // Delete related data in the correct order (child tables first)
+    console.log('🧹 Deleting related product images...')
+    const { error: imagesError } = await supabase
+      .from('product_images')
+      .delete()
+      .eq('product_id', id)
+
+    if (imagesError && imagesError.code !== 'PGRST116') {
+      console.error('Error deleting product images:', imagesError)
+    }
+
+    console.log('🧹 Deleting related product colors...')
+    const { error: colorsError } = await supabase
+      .from('product_colors')
+      .delete()
+      .eq('product_id', id)
+
+    if (colorsError && colorsError.code !== 'PGRST116') {
+      console.error('Error deleting product colors:', colorsError)
+    }
+
+    // Now delete the product itself
+    console.log('🗑️ Deleting product...')
+    const { error: productError } = await supabase
       .from('products')
       .delete()
       .eq('id', id)
 
-    if (error) {
-      console.error('Supabase error:', error)
+    if (productError) {
+      console.error('Supabase error deleting product:', productError)
       return NextResponse.json(
-        { error: `Database error: ${error.message}` },
+        { error: `Database error: ${productError.message}` },
         { status: 500 }
       )
     }
 
+    console.log('✅ Product and related data deleted successfully')
     const response = NextResponse.json({ success: true })
     response.headers.set('Cache-Control', 'no-store, max-age=0')
     return response

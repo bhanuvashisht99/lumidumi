@@ -113,7 +113,7 @@ function generatePasswordSetupEmail(name: string, resetLink: string): string {
 
             <div class="footer">
                 <p>If you didn't place an order with us, you can safely ignore this email.</p>
-                <p>Questions? Contact us at support@lumidumi.com or +91 98765 43210</p>
+                <p>Questions? Contact us at support@lumidumi.com or +91 93548 51086</p>
                 <p>Lumidumi - Handcrafted Candles Made with Love</p>
             </div>
         </div>

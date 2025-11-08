@@ -148,8 +148,8 @@ function OrderSuccessContent() {
                 support@lumidumi.com
               </a>
               {' '}or{' '}
-              <a href="tel:+919876543210" className="text-cream-300 hover:underline">
-                +91 98765 43210
+              <a href="tel:+919354851086" className="text-cream-300 hover:underline">
+                +91 93548 51086
               </a>
             </p>
           </div>

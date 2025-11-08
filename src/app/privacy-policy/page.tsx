@@ -91,7 +91,7 @@ export default function PrivacyPolicyPage() {
             <div className="mt-4 p-4 bg-cream-50 rounded-lg">
               <p className="font-medium">Lumidumi</p>
               <p>Email: privacy@lumidumi.com</p>
-              <p>Phone: +91 98765 43210</p>
+              <p>Phone: +91 93548 51086</p>
               <p>Address: 123 Artisan Lane, Craftsville, CS 12345, India</p>
             </div>
           </section>

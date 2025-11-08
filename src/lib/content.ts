@@ -60,13 +60,12 @@ function getDefaultContent(section: string): ContentData {
       title: 'Get in Touch',
       subtitle: 'We\'d love to hear from you. Send us a message and we\'ll respond as soon as possible.',
       email: 'team@lumidumi.com',
-      phone: '+91 98765 43210',
+      phone: '+91 93548 51086',
       address: 'Delhi, India',
       businessHours: 'Monday - Friday: 9:00 AM - 8:00 PM',
       socialMedia: {
-        instagram: 'https://instagram.com/lumidumi',
-        facebook: 'https://facebook.com/lumidumi',
-        whatsapp: '+91 98765 43210'
+        instagram: 'https://www.instagram.com/lumidumi_candles/',
+        whatsapp: '+91 93548 51086'
       }
     },
     footer: {
@@ -85,13 +84,12 @@ function getDefaultContent(section: string): ContentData {
       ],
       contact: {
         email: 'team@lumidumi.com',
-        phone: '+91 98765 43210',
+        phone: '+91 93548 51086',
         address: 'Delhi, India'
       },
       socialMedia: {
-        instagram: 'https://instagram.com/lumidumi',
-        facebook: 'https://facebook.com/lumidumi',
-        whatsapp: '+91 98765 43210'
+        instagram: 'https://www.instagram.com/lumidumi_candles/',
+        whatsapp: '+91 93548 51086'
       },
       copyright: '© 2025 Lumidumi. All rights reserved.'
     }
