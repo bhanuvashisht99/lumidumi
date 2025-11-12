@@ -140,6 +140,37 @@ export async function POST(request: NextRequest) {
       // Order is created but items failed - still return success
     } else {
       console.log('✅ Order items created successfully')
+
+      // Reduce stock quantities for ordered products
+      console.log('📉 Reducing stock quantities for ordered products...')
+      for (const item of orderItems) {
+        try {
+          // First get current stock
+          const { data: currentProduct } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', item.product_id)
+            .single()
+
+          if (currentProduct && currentProduct.stock_quantity >= item.quantity) {
+            const newStock = currentProduct.stock_quantity - item.quantity
+            const { error: stockError } = await supabase
+              .from('products')
+              .update({ stock_quantity: newStock })
+              .eq('id', item.product_id)
+
+            if (stockError) {
+              console.error(`❌ Error reducing stock for product ${item.product_id}:`, stockError)
+            } else {
+              console.log(`✅ Reduced stock for product ${item.product_id} by ${item.quantity}`)
+            }
+          } else {
+            console.log(`⚠️ Insufficient stock for product ${item.product_id}`)
+          }
+        } catch (stockUpdateError) {
+          console.error(`❌ Exception reducing stock for product ${item.product_id}:`, stockUpdateError)
+        }
+      }
     }
 
     console.log('✅ Order saved successfully:', order.id)

@@ -337,14 +337,60 @@ export default function ModernProductsTab() {
       return
     }
 
+    if (!confirm(`${action} ${selectedProducts.length} products?`)) {
+      return
+    }
+
     try {
-      // Implementation depends on your API structure
-      console.log(`Bulk ${action} for products:`, selectedProducts)
-      alert(`Bulk ${action} completed!`)
+      console.log(`Starting bulk ${action} for products:`, selectedProducts)
+
+      for (const productId of selectedProducts) {
+        if (action === 'delete') {
+          await handleDeleteProduct(productId)
+        } else {
+          // For activate/deactivate/feature/unfeature operations
+          const product = products.find(p => p.id === productId)
+          if (!product) continue
+
+          let updateData = { ...product }
+
+          switch (action) {
+            case 'activate':
+              updateData.is_active = true
+              break
+            case 'deactivate':
+              updateData.is_active = false
+              break
+            case 'feature':
+              updateData.featured = true
+              break
+            case 'unfeature':
+              updateData.featured = false
+              break
+          }
+
+          const response = await authenticatedFetch('/api/admin/products', {
+            method: 'PUT',
+            body: JSON.stringify({
+              productData: updateData,
+              images: product.images || [],
+              colors: product.colors || []
+            })
+          })
+
+          if (!response.ok) {
+            throw new Error(`Failed to ${action} product ${product.name}`)
+          }
+        }
+      }
+
+      await refreshData()
+      window.postMessage({ type: 'PRODUCTS_UPDATED' }, '*')
+      alert(`Bulk ${action} completed successfully!`)
       setSelectedProducts([])
     } catch (error) {
       console.error(`Error with bulk ${action}:`, error)
-      alert(`Error with bulk ${action}`)
+      alert(`Error with bulk ${action}: ${error.message}`)
     }
   }
 
