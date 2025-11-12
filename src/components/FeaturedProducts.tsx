@@ -35,6 +35,7 @@ export default function FeaturedProducts() {
             is_active: true,
             featured: true,
             slug: 'vanilla-dreams',
+            image_url: '/hero-candle.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           },
@@ -48,6 +49,7 @@ export default function FeaturedProducts() {
             is_active: true,
             featured: true,
             slug: 'lavender-bliss',
+            image_url: '/about-candle.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           },
@@ -61,6 +63,7 @@ export default function FeaturedProducts() {
             is_active: true,
             featured: true,
             slug: 'citrus-burst',
+            image_url: '/hero-candle.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           },
@@ -74,6 +77,7 @@ export default function FeaturedProducts() {
             is_active: true,
             featured: true,
             slug: 'sandalwood-serenity',
+            image_url: '/about-candle.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
@@ -158,8 +162,16 @@ export default function FeaturedProducts() {
                   <h3 className="text-xl font-semibold text-charcoal group-hover:text-cream-300 transition-colors">
                     {product.name}
                   </h3>
+                  {product.scent_description && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-charcoal/60">Scent:</span>
+                      <span className="inline-block bg-cream-100 text-cream-400 text-xs px-2 py-1 rounded-full font-medium">
+                        {product.scent_description}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-charcoal/60 text-sm">
-                    {product.scent_description || product.description}
+                    {product.description}
                   </p>
                   <div className="flex items-center justify-between pt-2">
                     <span className="text-2xl font-bold text-cream-300">

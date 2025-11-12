@@ -1,4 +1,7 @@
+'use client'
+
 export default function AboutPage() {
+
   return (
     <div className="min-h-screen bg-white pt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -14,7 +17,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           {/* Image */}
           <div className="relative">
-            <div className="aspect-square bg-cream-200 rounded-2xl shadow-lg flex items-center justify-center overflow-hidden">
+            <div className="aspect-square bg-cream-200 rounded-2xl shadow-lg overflow-hidden">
               <img
                 src="/about-candle.jpg"
                 alt="Our Candle Making Process"

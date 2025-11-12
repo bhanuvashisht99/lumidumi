@@ -17,10 +17,6 @@ export default function HeroClient({ initialContent }: HeroClientProps) {
   // Use server content initially, then switch to client updates
   const displayContent = heroContent.title ? heroContent : initialContent
 
-  // Debug logging
-  console.log('HeroClient - heroContent:', heroContent)
-  console.log('HeroClient - initialContent:', initialContent)
-  console.log('HeroClient - displayContent:', displayContent)
 
   // Preload hero image
   useEffect(() => {

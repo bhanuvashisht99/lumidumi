@@ -109,8 +109,16 @@ function ProductCard({ product, images, hasColors, onClick }: {
         <h3 className="text-xl font-semibold text-charcoal group-hover:text-cream-300 transition-colors">
           {product.name}
         </h3>
+        {product.scent_description && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-charcoal/60">Scent:</span>
+            <span className="inline-block bg-cream-100 text-cream-400 text-xs px-2 py-1 rounded-full font-medium">
+              {product.scent_description}
+            </span>
+          </div>
+        )}
         <p className="text-charcoal/60 text-sm leading-relaxed">
-          {product.scent_description || product.description}
+          {product.description}
         </p>
 
         {/* Color options */}
@@ -257,13 +265,19 @@ export default function ProductsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProducts.map((product) => {
               const productImages = (product as any).images || []
+
+              // Add fallback images if none exist
+              const finalImages = productImages.length > 0 ? productImages : [
+                { url: product.image_url || '/hero-candle.jpg', alt_text: product.name }
+              ]
+
               const hasColors = (product as any).colors && (product as any).colors.length > 0
 
               return (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  images={productImages}
+                  images={finalImages}
                   hasColors={hasColors}
                   onClick={(e) => {
                     e.preventDefault()
