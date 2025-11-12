@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { ContentData } from '@/lib/content'
 import { useContentSection } from '@/hooks/useContent'
 import Logo from './Logo'
@@ -9,11 +10,35 @@ interface HeroClientProps {
 }
 
 export default function HeroClient({ initialContent }: HeroClientProps) {
+  const [imageLoaded, setImageLoaded] = useState(false)
   // Use server-loaded content as initial, but allow client updates for admin panel
   const { content: heroContent } = useContentSection('hero')
 
   // Use server content initially, then switch to client updates
   const displayContent = heroContent.title ? heroContent : initialContent
+
+  // Debug logging
+  console.log('HeroClient - heroContent:', heroContent)
+  console.log('HeroClient - initialContent:', initialContent)
+  console.log('HeroClient - displayContent:', displayContent)
+
+  // Preload hero image
+  useEffect(() => {
+    if (displayContent.imageUrl) {
+      console.log('Loading hero image:', displayContent.imageUrl)
+      const img = new Image()
+      img.onload = () => {
+        console.log('Hero image loaded successfully')
+        setImageLoaded(true)
+      }
+      img.onerror = (err) => {
+        console.error('Hero image failed to load:', err)
+      }
+      img.src = displayContent.imageUrl
+    } else {
+      console.log('No hero image URL found in content:', displayContent)
+    }
+  }, [displayContent.imageUrl])
 
   return (
     <section className="relative bg-gradient-to-b from-cream-50 to-cream-100 min-h-screen flex items-center">
@@ -64,12 +89,29 @@ export default function HeroClient({ initialContent }: HeroClientProps) {
                 <img
                   src={displayContent.imageUrl}
                   alt={displayContent.title}
-                  className="w-full h-full object-cover rounded-2xl"
+                  className={`w-full h-full object-cover rounded-2xl transition-opacity duration-300 ${
+                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  onLoad={() => {
+                    console.log('Image onLoad triggered')
+                    setImageLoaded(true)
+                  }}
+                  onError={(e) => {
+                    console.error('Image onError triggered:', e)
+                  }}
                 />
               ) : (
                 <div className="text-center text-charcoal/40">
                   <div className="text-6xl mb-4">🕯️</div>
                   <p className="text-lg">Beautiful Candle Image</p>
+                </div>
+              )}
+              {displayContent.imageUrl && !imageLoaded && (
+                <div className="absolute inset-0 bg-cream-200 rounded-2xl flex items-center justify-center">
+                  <div className="text-center text-charcoal/40">
+                    <div className="text-6xl mb-4">🕯️</div>
+                    <p className="text-lg">Loading...</p>
+                  </div>
                 </div>
               )}
             </div>

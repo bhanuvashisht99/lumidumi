@@ -14,7 +14,9 @@ export function useContentSection(section: string) {
       const response = await fetch(`/api/admin/content?section=${section}`)
       if (response.ok) {
         const { data } = await response.json()
+        console.log(`[useContent] ${section} - API response:`, data)
         if (data?.additional_data) {
+          console.log(`[useContent] ${section} - Setting content:`, data.additional_data)
           setContent(data.additional_data)
         }
       }

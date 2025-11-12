@@ -38,7 +38,7 @@ function getDefaultContent(section: string): ContentData {
       title: 'Lumidumi',
       subtitle: 'Handcrafted candles that illuminate your space with warmth and elegance.',
       description: 'Each candle is lovingly made with premium wax and carefully selected fragrances.',
-      imageUrl: '',
+      imageUrl: '/hero-candle.jpg',
       stats: [
         { value: '100%', label: 'Natural Wax' },
         { value: '50+', label: 'Unique Scents' },

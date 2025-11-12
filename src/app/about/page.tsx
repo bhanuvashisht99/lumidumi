@@ -14,11 +14,14 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           {/* Image */}
           <div className="relative">
-            <div className="aspect-square bg-cream-200 rounded-2xl shadow-lg flex items-center justify-center">
-              <div className="text-center text-charcoal/40">
-                <div className="text-8xl mb-4">✨</div>
-                <p className="text-lg">Our Candle Making Process</p>
-              </div>
+            <div className="aspect-square bg-cream-200 rounded-2xl shadow-lg flex items-center justify-center overflow-hidden">
+              <img
+                src="/about-candle.jpg"
+                alt="Our Candle Making Process"
+                className="w-full h-full object-cover rounded-2xl"
+                onLoad={() => console.log('About image loaded successfully')}
+                onError={(e) => console.error('About image failed to load:', e)}
+              />
             </div>
           </div>
 

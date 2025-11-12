@@ -137,7 +137,11 @@ export default function FeaturedProducts() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {products.map((product) => (
-              <div key={product.id} className="card group cursor-pointer hover:shadow-lg transition-shadow">
+              <div
+                key={product.id}
+                className="card group cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => router.push(`/products/${product.slug}`)}
+              >
                 <div className="aspect-square bg-cream-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
                   {product.image_url ? (
                     <img
@@ -162,7 +166,10 @@ export default function FeaturedProducts() {
                       ₹{product.price}
                     </span>
                     <button
-                      onClick={() => addToCart(product)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        addToCart(product)
+                      }}
                       className="text-sm bg-cream-100 hover:bg-cream-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       disabled={product.stock_quantity === 0}
                     >
