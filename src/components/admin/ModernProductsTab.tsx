@@ -390,7 +390,7 @@ export default function ModernProductsTab() {
       setSelectedProducts([])
     } catch (error) {
       console.error(`Error with bulk ${action}:`, error)
-      alert(`Error with bulk ${action}: ${error.message}`)
+      alert(`Error with bulk ${action}: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
