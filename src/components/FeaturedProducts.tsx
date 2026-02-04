@@ -1,100 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getProducts, Product } from '@/lib/database'
 import { useCart } from '@/contexts/CartContext'
+import { usePreloadedData } from '@/contexts/DataPreloadContext'
 
 export default function FeaturedProducts() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
   const { addToCart, isInCart, getCartItemQuantity } = useCart()
   const router = useRouter()
+  const { publicProducts, isLoading: loading, refreshData } = usePreloadedData()
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true)
-      // Check if we're in a browser environment with valid Supabase config
-      if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        const featuredProducts = await getProducts(true) // Get only featured products
-        setProducts(featuredProducts)
-      } else {
-        throw new Error('Supabase not configured or running on server')
-      }
-    } catch (error) {
-      console.error('Error loading products:', error)
-      // Fallback to hardcoded products if database fails
-        setProducts([
-          {
-            id: '1',
-            name: 'Vanilla Dreams',
-            price: 899,
-            scent_description: 'Warm vanilla with hints of caramel',
-            description: 'Handcrafted vanilla candle with hints of caramel',
-            stock_quantity: 15,
-            is_active: true,
-            featured: true,
-            slug: 'vanilla-dreams',
-            image_url: '/hero-candle.jpg',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            name: 'Lavender Bliss',
-            price: 799,
-            scent_description: 'Calming lavender for relaxation',
-            description: 'Calming lavender candle for relaxation',
-            stock_quantity: 20,
-            is_active: true,
-            featured: true,
-            slug: 'lavender-bliss',
-            image_url: '/about-candle.jpg',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '3',
-            name: 'Citrus Burst',
-            price: 749,
-            scent_description: 'Fresh citrus energizing blend',
-            description: 'Energizing citrus blend candle',
-            stock_quantity: 18,
-            is_active: true,
-            featured: true,
-            slug: 'citrus-burst',
-            image_url: '/hero-candle.jpg',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '4',
-            name: 'Sandalwood Serenity',
-            price: 999,
-            scent_description: 'Rich sandalwood with earthy notes',
-            description: 'Rich sandalwood candle with earthy notes',
-            stock_quantity: 12,
-            is_active: true,
-            featured: true,
-            slug: 'sandalwood-serenity',
-            image_url: '/about-candle.jpg',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ])
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Filter for featured products from the preloaded data (which includes images)
+  const products = (publicProducts || []).filter((p: any) => p.featured)
 
   useEffect(() => {
-    loadProducts()
-
     // Listen for product updates from admin panel
     const handleProductUpdate = (event: MessageEvent) => {
       if (event.data.type === 'PRODUCTS_UPDATED') {
         console.log('Received product update notification, refreshing...')
-        loadProducts()
+        refreshData()
       }
     }
 
@@ -103,12 +27,7 @@ export default function FeaturedProducts() {
     return () => {
       window.removeEventListener('message', handleProductUpdate)
     }
-  }, [])
-
-  // Add a manual refresh function
-  const refreshProducts = () => {
-    loadProducts()
-  }
+  }, [refreshData])
 
   return (
     <section className="py-20 bg-white">
@@ -147,15 +66,20 @@ export default function FeaturedProducts() {
                 onClick={() => router.push(`/products/${product.slug}`)}
               >
                 <div className="aspect-square bg-cream-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    '🕯️'
-                  )}
+                  {(() => {
+                    const images = (product as any).images || []
+                    const primaryImage = images.find((img: any) => img.is_primary) || images[0]
+                    const imageUrl = primaryImage?.url || product.image_url
+                    return imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={primaryImage?.alt_text || product.name}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      '🕯️'
+                    )
+                  })()}
                 </div>
 
                 <div className="space-y-2">
