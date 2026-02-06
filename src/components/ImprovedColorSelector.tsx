@@ -202,11 +202,7 @@ export default function ImprovedColorSelector({
               {/* <p className="text-sm font-medium text-charcoal">
                 {selectedColor.stock_quantity} in stock
               </p> */}
-              {selectedColor.image_urls && selectedColor.image_urls.length > 0 && (
-                <p className="text-xs text-cream-300 mt-1">
-                  📸 {selectedColor.image_urls.length} custom images
-                </p>
-              )}
+
             </div>
           </div>
         </div>
