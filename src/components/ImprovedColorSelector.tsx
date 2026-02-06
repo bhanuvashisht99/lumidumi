@@ -18,13 +18,17 @@ interface ImprovedColorSelectorProps {
   basePrice: number
   onColorChange?: (color: ColorVariant) => void
   className?: string
+  variantLabel?: string
+  useImageSwatches?: boolean
 }
 
 export default function ImprovedColorSelector({
   colors = [],
   basePrice,
   onColorChange,
-  className = ''
+  className = '',
+  variantLabel = 'Color',
+  useImageSwatches = false
 }: ImprovedColorSelectorProps) {
   const [selectedColor, setSelectedColor] = useState<ColorVariant | null>(null)
 
@@ -69,11 +73,10 @@ export default function ImprovedColorSelector({
           Color: <span className="text-cream-300">{selectedColor?.color_name || 'Select a color'}</span>
         </h3>
         {selectedColor && selectedColor.price_modifier !== 0 && (
-          <span className={`text-sm font-medium px-2 py-1 rounded ${
-            selectedColor.price_modifier > 0
-              ? 'bg-orange-100 text-orange-600'
-              : 'bg-green-100 text-green-600'
-          }`}>
+          <span className={`text-sm font-medium px-2 py-1 rounded ${selectedColor.price_modifier > 0
+            ? 'bg-orange-100 text-orange-600'
+            : 'bg-green-100 text-green-600'
+            }`}>
             {selectedColor.price_modifier > 0 ? '+' : ''}₹{selectedColor.price_modifier}
           </span>
         )}
@@ -121,9 +124,8 @@ export default function ImprovedColorSelector({
               </div>
 
               {/* Color Name */}
-              <div className={`text-sm font-medium mb-1 ${
-                isSelected ? 'text-cream-300' : 'text-charcoal'
-              }`}>
+              <div className={`text-sm font-medium mb-1 ${isSelected ? 'text-cream-300' : 'text-charcoal'
+                }`}>
                 {color.color_name}
               </div>
 
@@ -134,9 +136,8 @@ export default function ImprovedColorSelector({
 
               {/* Price Modifier */}
               {color.price_modifier !== 0 && (
-                <div className={`text-xs font-medium mt-1 ${
-                  color.price_modifier > 0 ? 'text-orange-600' : 'text-green-600'
-                }`}>
+                <div className={`text-xs font-medium mt-1 ${color.price_modifier > 0 ? 'text-orange-600' : 'text-green-600'
+                  }`}>
                   {color.price_modifier > 0 ? '+' : ''}₹{Math.abs(color.price_modifier)}
                 </div>
               )}

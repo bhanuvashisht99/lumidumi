@@ -8,26 +8,32 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Playfair Display', serif;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-cream-300 text-white px-6 py-3 rounded-lg font-medium hover:bg-cream-300/90 transition-colors;
+    @apply bg-cream-300 text-white px-8 py-3 rounded-full font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 active:scale-95;
+    background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), transparent);
   }
 
   .btn-secondary {
-    @apply bg-cream-100 text-charcoal px-6 py-3 rounded-lg font-medium hover:bg-cream-200 transition-colors;
+    @apply bg-transparent border-2 border-cream-200 text-charcoal px-8 py-3 rounded-full font-medium hover:bg-cream-50 hover:border-cream-300 transition-all duration-300;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-cream-100 p-6;
+    @apply bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border-none;
   }
 
   .input {
-    @apply w-full px-4 py-3 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 focus:border-transparent;
+    @apply w-full px-4 py-3 bg-cream-50 border-b-2 border-cream-200 rounded-t-lg focus:outline-none focus:border-cream-300 transition-colors;
   }
 
   .scrollbar-hide {

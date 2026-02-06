@@ -304,16 +304,15 @@ export default function ProductDetailPage() {
 
             {/* Thumbnail Gallery */}
             {currentImages.length > 1 && (
-              <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+              <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {currentImages.map((imageUrl, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                      selectedImageIndex === index
-                        ? 'border-cream-300 shadow-md scale-105'
-                        : 'border-cream-200 hover:border-cream-300 active:scale-95'
-                    }`}
+                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${selectedImageIndex === index
+                      ? 'border-cream-300 shadow-md scale-105'
+                      : 'border-cream-200 hover:border-cream-300 active:scale-95'
+                      }`}
                   >
                     <img
                       src={imageUrl}
@@ -361,6 +360,9 @@ export default function ProductDetailPage() {
                 colors={product.colors}
                 basePrice={product.price}
                 onColorChange={handleColorChange}
+                variantLabel={product.name.toLowerCase().includes('set of 3') ? 'Get Random 3' : 'Color'}
+                useImageSwatches={product.name.toLowerCase().includes('set of 3')}
+                className="mb-8"
               />
             )}
 
@@ -395,27 +397,37 @@ export default function ProductDetailPage() {
             {/* Stock Status */}
             <div>
               {product.stock_quantity > 0 ? (
-                <p className="text-green-600 text-sm font-medium">✓ In Stock ({product.stock_quantity} available)</p>
+                <div className="flex items-center text-green-700 font-medium">
+                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  In Stock
+                </div>
               ) : (
-                <p className="text-red-600 text-sm font-medium">✗ Out of Stock</p>
+                <div className="flex items-center text-red-600 font-medium">
+                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Out of Stock
+                </div>
               )}
             </div>
 
             {/* Add to Cart */}
             <button
               onClick={() => addToCart({
-                ...product, 
+                ...product,
                 price: currentPrice,
                 image_url: currentImages[selectedImageIndex] // Use the currently displayed image
               })}
-              className="w-full bg-cream-300 hover:bg-cream-300/90 text-white py-4 px-6 rounded-lg font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:translate-y-0"
               disabled={product.stock_quantity === 0}
             >
               {product.stock_quantity === 0
                 ? 'Out of Stock'
                 : isInCart(product.id)
-                ? `In Cart (${getCartItemQuantity(product.id)}) - Add More`
-                : 'Add to Cart'
+                  ? `In Cart (${getCartItemQuantity(product.id)}) - Add More`
+                  : 'Add to Cart'
               }
             </button>
 

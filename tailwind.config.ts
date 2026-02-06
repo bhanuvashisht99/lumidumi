@@ -9,12 +9,13 @@ module.exports = {
     extend: {
       colors: {
         cream: {
-          50: '#FEFCF8',
-          100: '#F7F3E9',
+          50: '#FFFCF5', // Beeswax White
+          100: '#F9EED9', // Soft Soy
           200: '#E8DCC0',
-          300: '#D4AF37',
+          300: '#D4A35C', // Honey Gold
         },
-        charcoal: '#2C2C2C',
+        charcoal: '#2D2A26', // Off-black
+        earth: '#8C7E6A', // Earth Taupe for secondary text
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
