@@ -126,11 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: supabaseUser.email || '',
         name: supabaseUser.user_metadata?.full_name || supabaseUser.email || '',
         phone: undefined,
-        role: supabaseUser.email === 'bhanuvashisht99@gmail.com' ? 'admin' : 'customer',
+        role: (supabaseUser.email?.toLowerCase() === 'bhanuvashisht99@gmail.com') ? 'admin' : 'customer',
         avatar_url: undefined,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        is_admin: supabaseUser.email === 'bhanuvashisht99@gmail.com'
+        is_admin: (supabaseUser.email?.toLowerCase() === 'bhanuvashisht99@gmail.com')
       }
 
       // Set fallback immediately to prevent broken state
@@ -152,8 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!error && data) {
           // Update with real profile data, converting to our User interface
-          // Check if user is in hardcoded admin list
-          const isHardcodedAdmin = (data.email || supabaseUser.email) === 'bhanuvashisht99@gmail.com'
+          // Check if user is in hardcoded admin list (case-insensitive)
+          const isHardcodedAdmin = (data.email?.toLowerCase() || supabaseUser.email?.toLowerCase()) === 'bhanuvashisht99@gmail.com'
           const finalRole = isHardcodedAdmin ? 'admin' : data.role
 
           const userWithAdmin = {
