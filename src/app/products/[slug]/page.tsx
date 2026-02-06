@@ -338,6 +338,14 @@ export default function ProductDetailPage() {
                   ₹{Math.abs(selectedColor.price_modifier).toLocaleString()} for {selectedColor.color_name}
                 </p>
               )}
+
+              {/* Prominent Scent Display */}
+              {product.scent_description && (
+                <div className="mt-4 inline-flex items-center bg-cream-100 px-4 py-2 rounded-full">
+                  <span className="text-charcoal/60 text-sm font-medium mr-2">Scent:</span>
+                  <span className="text-charcoal font-medium">{product.scent_description}</span>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -346,13 +354,7 @@ export default function ProductDetailPage() {
               <p className="text-charcoal/70 leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Scent Description */}
-            {product.scent_description && (
-              <div>
-                <h3 className="text-lg font-semibold text-charcoal mb-2">Scent Profile</h3>
-                <p className="text-charcoal/70 leading-relaxed">{product.scent_description}</p>
-              </div>
-            )}
+            {/* Description */}
 
             {/* Color Selection */}
             {product.colors && product.colors.length > 0 && (
