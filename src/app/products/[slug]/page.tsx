@@ -409,7 +409,7 @@ export default function ProductDetailPage() {
                 price: currentPrice,
                 image_url: currentImages[selectedImageIndex] // Use the currently displayed image
               })}
-              className="w-full bg-cream-300 hover:bg-cream-300/90 text-white py-4 px-6 rounded-lg font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
               disabled={product.stock_quantity === 0}
             >
               {product.stock_quantity === 0
