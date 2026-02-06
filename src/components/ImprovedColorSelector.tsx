@@ -18,17 +18,13 @@ interface ImprovedColorSelectorProps {
   basePrice: number
   onColorChange?: (color: ColorVariant) => void
   className?: string
-  variantLabel?: string
-  useImageSwatches?: boolean
 }
 
 export default function ImprovedColorSelector({
   colors = [],
   basePrice,
   onColorChange,
-  className = '',
-  variantLabel = 'Color',
-  useImageSwatches = false
+  className = ''
 }: ImprovedColorSelectorProps) {
   const [selectedColor, setSelectedColor] = useState<ColorVariant | null>(null)
 
@@ -70,13 +66,14 @@ export default function ImprovedColorSelector({
       {/* Current Selection */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-charcoal">
-          {variantLabel}: <span className="text-cream-300">{selectedColor?.color_name || `Select a ${variantLabel.toLowerCase()}`}</span>
+          Color: <span className="text-cream-300">{selectedColor?.color_name || 'Select a color'}</span>
         </h3>
         {selectedColor && selectedColor.price_modifier !== 0 && (
-          <span className={`text-sm font-medium px-2 py-1 rounded ${selectedColor.price_modifier > 0
-            ? 'bg-orange-100 text-orange-600'
-            : 'bg-green-100 text-green-600'
-            }`}>
+          <span className={`text-sm font-medium px-2 py-1 rounded ${
+            selectedColor.price_modifier > 0
+              ? 'bg-orange-100 text-orange-600'
+              : 'bg-green-100 text-green-600'
+          }`}>
             {selectedColor.price_modifier > 0 ? '+' : ''}₹{selectedColor.price_modifier}
           </span>
         )}
@@ -88,11 +85,6 @@ export default function ImprovedColorSelector({
           const isSelected = selectedColor?.id === color.id
           const isAvailable = color.is_available && color.stock_quantity > 0
           const finalPrice = getColorPrice(color)
-
-          // Determine image to show for swatch if enabled
-          const swatchImage = useImageSwatches
-            ? (color.primary_image || (color.image_urls && color.image_urls[0]))
-            : null
 
           return (
             <button
@@ -111,34 +103,27 @@ export default function ImprovedColorSelector({
               `}
               title={`${color.color_name} - ₹${finalPrice.toLocaleString()}`}
             >
-              {/* Color Swatch / Image Swatch */}
+              {/* Color Swatch */}
               <div
                 className={`
-                  w-12 h-12 mx-auto rounded-full border-3 mb-3 transition-all duration-200 overflow-hidden
+                  w-12 h-12 mx-auto rounded-full border-3 mb-3 transition-all duration-200
                   ${isSelected ? 'border-white shadow-lg scale-110' : 'border-gray-300'}
                   ${!isAvailable ? 'opacity-50' : ''}
                 `}
-                style={!swatchImage ? { backgroundColor: color.color_code } : {}}
+                style={{ backgroundColor: color.color_code }}
               >
-                {swatchImage ? (
-                  <img
-                    src={swatchImage}
-                    alt={color.color_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  // Selection Indicator for pure color swatches
-                  isSelected && (
-                    <div className="w-full h-full rounded-full flex items-center justify-center">
-                      <div className="w-4 h-4 rounded-full bg-white border-2 border-gray-600 shadow"></div>
-                    </div>
-                  )
+                {/* Selection Indicator */}
+                {isSelected && (
+                  <div className="w-full h-full rounded-full flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full bg-white border-2 border-gray-600 shadow"></div>
+                  </div>
                 )}
               </div>
 
               {/* Color Name */}
-              <div className={`text-sm font-medium mb-1 ${isSelected ? 'text-cream-300' : 'text-charcoal'
-                }`}>
+              <div className={`text-sm font-medium mb-1 ${
+                isSelected ? 'text-cream-300' : 'text-charcoal'
+              }`}>
                 {color.color_name}
               </div>
 
@@ -149,19 +134,20 @@ export default function ImprovedColorSelector({
 
               {/* Price Modifier */}
               {color.price_modifier !== 0 && (
-                <div className={`text-xs font-medium mt-1 ${color.price_modifier > 0 ? 'text-orange-600' : 'text-green-600'
-                  }`}>
+                <div className={`text-xs font-medium mt-1 ${
+                  color.price_modifier > 0 ? 'text-orange-600' : 'text-green-600'
+                }`}>
                   {color.price_modifier > 0 ? '+' : ''}₹{Math.abs(color.price_modifier)}
                 </div>
               )}
 
-              {/* Stock Info - REMOVED per request */}
-              {/* <div className="text-xs text-gray-500 mt-1">
+              {/* Stock Info */}
+              <div className="text-xs text-gray-500 mt-1">
                 {color.stock_quantity} left
-              </div> */}
+              </div>
 
               {/* Image Count Indicator */}
-              {color.image_urls && color.image_urls.length > 0 && !useImageSwatches && (
+              {color.image_urls && color.image_urls.length > 0 && (
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-cream-300 text-white text-xs rounded-full flex items-center justify-center">
                   {color.image_urls.length}
                 </div>
@@ -198,10 +184,9 @@ export default function ImprovedColorSelector({
               </p>
             </div>
             <div className="text-right">
-              {/* Stock info removed per request */}
-              {/* <p className="text-sm font-medium text-charcoal">
+              <p className="text-sm font-medium text-charcoal">
                 {selectedColor.stock_quantity} in stock
-              </p> */}
+              </p>
               {selectedColor.image_urls && selectedColor.image_urls.length > 0 && (
                 <p className="text-xs text-cream-300 mt-1">
                   📸 {selectedColor.image_urls.length} custom images

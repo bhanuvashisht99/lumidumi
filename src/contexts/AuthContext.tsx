@@ -152,21 +152,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!error && data) {
           // Update with real profile data, converting to our User interface
-          // Check if user is in hardcoded admin list (case-insensitive)
-          const adminEmails = ['bhanuvashisht99@gmail.com', 'bhavanavashist99@gmail.com']
-          const isHardcodedAdmin = adminEmails.includes(data.email?.toLowerCase()) || adminEmails.includes(supabaseUser.email?.toLowerCase())
-          const finalRole = isHardcodedAdmin ? 'admin' : data.role
-
           const userWithAdmin = {
             id: data.id,
             email: data.email || supabaseUser.email,
             name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.first_name || data.email || 'User',
             phone: data.phone,
-            role: finalRole,
+            role: data.role,
             avatar_url: undefined, // profiles table doesn't have avatar_url
             created_at: data.created_at,
             updated_at: data.updated_at,
-            is_admin: finalRole === 'admin'
+            is_admin: data.role === 'admin'
           }
           console.log('✅ User profile loaded:', userWithAdmin.email, 'Role:', userWithAdmin.role)
           setUser(userWithAdmin)

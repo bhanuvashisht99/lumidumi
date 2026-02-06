@@ -31,12 +31,7 @@ export default function AuthGuard({
       }
 
       // Check admin requirement
-      if (requireAdmin) {
-        console.log('🛡️ AuthGuard Check:', { email: user?.email, role: user?.role, isAdmin, requireAdmin })
-      }
-
       if (requireAdmin && !isAdmin) {
-        console.warn('⛔ Access Denied: User is not admin', { email: user?.email })
         router.push('/unauthorized')
         return
       }

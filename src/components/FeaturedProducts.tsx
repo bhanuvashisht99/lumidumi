@@ -125,10 +125,9 @@ export default function FeaturedProducts() {
                       }
                     </button>
                   </div>
-                  {/* Stock warning removed per request */}
-                  {/* {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+                  {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
                     <p className="text-orange-600 text-xs">Only {product.stock_quantity} left!</p>
-                  )} */}
+                  )}
                 </div>
               </div>
             ))}
