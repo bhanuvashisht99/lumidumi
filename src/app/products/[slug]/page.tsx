@@ -341,8 +341,8 @@ export default function ProductDetailPage() {
 
               {/* Prominent Scent Display */}
               {product.scent_description && (
-                <div className="mt-4 inline-flex items-center bg-cream-100 px-4 py-2 rounded-full">
-                  <span className="text-charcoal/60 text-sm font-medium mr-2">Scent:</span>
+                <div className="mt-3 flex items-center text-lg">
+                  <span className="text-charcoal/60 font-serif italic mr-2">Scent:</span>
                   <span className="text-charcoal font-medium">{product.scent_description}</span>
                 </div>
               )}
