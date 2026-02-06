@@ -82,65 +82,54 @@ export default function FeaturedProducts() {
                   })()}
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-charcoal group-hover:text-cream-300 transition-colors">
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <h3 className="text-xl font-medium text-charcoal font-serif group-hover:text-gold-muted transition-colors">
                     {product.name}
                   </h3>
-                  {product.scent_description && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-charcoal/60">Scent:</span>
-                      <span className="inline-block bg-cream-100 text-cream-400 text-xs px-2 py-1 rounded-full font-medium">
-                        {product.scent_description}
-                      </span>
-                    </div>
-                  )}
-                  <p className="text-charcoal/60 text-sm">
-                    {product.description}
-                  </p>
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-2xl font-bold text-cream-300">
-                      ₹{product.price}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        // Recalculate the image to ensure we pass the one being displayed
-                        const images = (product as any).images || []
-                        const primaryImage = images.find((img: any) => img.is_primary) || images[0]
-                        const imageUrl = primaryImage?.url || product.image_url
 
-                        addToCart({
-                          ...product,
-                          image_url: imageUrl
-                        })
-                      }}
-                      className="text-sm bg-cream-100 hover:bg-cream-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                      disabled={product.stock_quantity === 0}
-                    >
-                      {product.stock_quantity === 0
-                        ? 'Out of Stock'
-                        : isInCart(product.id)
-                          ? `In Cart (${getCartItemQuantity(product.id)})`
-                          : 'Add to Cart'
-                      }
-                    </button>
-                  </div>
-                  {/* Stock indicator removed for cleaner UI */}
+                  <span className="text-lg font-medium text-charcoal/80">
+                    ₹{product.price}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // Recalculate the image to ensure we pass the one being displayed
+                      const images = (product as any).images || []
+                      const primaryImage = images.find((img: any) => img.is_primary) || images[0]
+                      const imageUrl = primaryImage?.url || product.image_url
+
+                      addToCart({
+                        ...product,
+                        image_url: imageUrl
+                      })
+                    }}
+                    className="text-sm bg-cream-100 hover:bg-cream-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    disabled={product.stock_quantity === 0}
+                  >
+                    {product.stock_quantity === 0
+                      ? 'Out of Stock'
+                      : isInCart(product.id)
+                        ? `In Cart (${getCartItemQuantity(product.id)})`
+                        : 'Add to Cart'
+                    }
+                  </button>
                 </div>
+                {/* Stock indicator removed for cleaner UI */}
               </div>
-            ))}
-          </div>
+              </div>
+        ))}
+      </div>
         )}
 
-        <div className="text-center mt-12">
-          <button
-            onClick={() => router.push('/products')}
-            className="btn-primary text-lg px-8 py-4 hover:bg-cream-300/90 transition-colors"
-          >
-            View All Products
-          </button>
-        </div>
+      <div className="text-center mt-12">
+        <button
+          onClick={() => router.push('/products')}
+          className="btn-primary text-lg px-8 py-4 hover:bg-cream-300/90 transition-colors"
+        >
+          View All Products
+        </button>
       </div>
-    </section>
+    </div>
+    </section >
   )
 }
