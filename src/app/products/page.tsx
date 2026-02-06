@@ -58,7 +58,7 @@ function ProductCard({ product, images, hasColors, onClick }: {
                   className="absolute left-1 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-charcoal w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 hover:bg-white hover:scale-110 shadow-lg flex items-center justify-center pointer-events-auto"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
                 <button
@@ -69,7 +69,7 @@ function ProductCard({ product, images, hasColors, onClick }: {
                   className="absolute right-1 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm text-charcoal w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 hover:bg-white hover:scale-110 shadow-lg flex items-center justify-center pointer-events-auto"
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </>
@@ -92,9 +92,8 @@ function ProductCard({ product, images, hasColors, onClick }: {
                       e.stopPropagation()
                       setCurrentImageIndex(index)
                     }}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-125 pointer-events-auto ${
-                      currentImageIndex === index ? 'bg-white shadow-sm' : 'bg-white/60 hover:bg-white/80'
-                    }`}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 hover:scale-125 pointer-events-auto ${currentImageIndex === index ? 'bg-white shadow-sm' : 'bg-white/60 hover:bg-white/80'
+                      }`}
                   />
                 ))}
               </div>
@@ -111,8 +110,8 @@ function ProductCard({ product, images, hasColors, onClick }: {
         </h3>
         {product.scent_description && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-charcoal/60">Scent:</span>
-            <span className="inline-block bg-cream-100 text-cream-400 text-xs px-2 py-1 rounded-full font-medium">
+            <span className="text-xs text-charcoal/60 font-serif italic">Scent:</span>
+            <span className="text-charcoal text-xs font-medium">
               {product.scent_description}
             </span>
           </div>
@@ -156,8 +155,8 @@ function ProductCard({ product, images, hasColors, onClick }: {
             {product.stock_quantity === 0
               ? 'Out of Stock'
               : isInCart(product.id)
-              ? `In Cart (${getCartItemQuantity(product.id)})`
-              : 'Add to Cart'
+                ? `In Cart (${getCartItemQuantity(product.id)})`
+                : 'Add to Cart'
             }
           </button>
         </div>
@@ -233,11 +232,10 @@ export default function ProductsPage() {
               key={category.id}
               type="button"
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-6 py-3 rounded-full font-medium transition-colors ${
-                selectedCategory === category.id
+              className={`px-6 py-3 rounded-full font-medium transition-colors ${selectedCategory === category.id
                   ? 'bg-cream-300 text-white'
                   : 'bg-white text-charcoal hover:bg-cream-100'
-              }`}
+                }`}
             >
               {category.name}
             </button>
