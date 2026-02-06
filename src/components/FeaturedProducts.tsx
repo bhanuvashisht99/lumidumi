@@ -114,22 +114,20 @@ export default function FeaturedProducts() {
                     }
                   </button>
                 </div>
-                {/* Stock indicator removed for cleaner UI */}
               </div>
-              </div>
-        ))}
-      </div>
+            ))}
+          </div>
         )}
 
-      <div className="text-center mt-12">
-        <button
-          onClick={() => router.push('/products')}
-          className="btn-primary text-lg px-8 py-4 hover:bg-cream-300/90 transition-colors"
-        >
-          View All Products
-        </button>
+        <div className="text-center mt-12">
+          <button
+            onClick={() => router.push('/products')}
+            className="btn-primary text-lg px-8 py-4 hover:bg-cream-300/90 transition-colors"
+          >
+            View All Products
+          </button>
+        </div>
       </div>
-    </div>
     </section >
   )
 }
