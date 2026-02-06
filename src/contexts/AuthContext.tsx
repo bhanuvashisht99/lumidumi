@@ -126,11 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: supabaseUser.email || '',
         name: supabaseUser.user_metadata?.full_name || supabaseUser.email || '',
         phone: undefined,
-        role: (supabaseUser.email?.toLowerCase() === 'bhanuvashisht99@gmail.com') ? 'admin' : 'customer',
+        role: (['bhanuvashisht99@gmail.com', 'bhavanavashist99@gmail.com'].includes(supabaseUser.email?.toLowerCase() || '')) ? 'admin' : 'customer',
         avatar_url: undefined,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        is_admin: (supabaseUser.email?.toLowerCase() === 'bhanuvashisht99@gmail.com')
+        is_admin: (['bhanuvashisht99@gmail.com', 'bhavanavashist99@gmail.com'].includes(supabaseUser.email?.toLowerCase() || ''))
       }
 
       // Set fallback immediately to prevent broken state
@@ -153,7 +153,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!error && data) {
           // Update with real profile data, converting to our User interface
           // Check if user is in hardcoded admin list (case-insensitive)
-          const isHardcodedAdmin = (data.email?.toLowerCase() || supabaseUser.email?.toLowerCase()) === 'bhanuvashisht99@gmail.com'
+          const adminEmails = ['bhanuvashisht99@gmail.com', 'bhavanavashist99@gmail.com']
+          const isHardcodedAdmin = adminEmails.includes(data.email?.toLowerCase()) || adminEmails.includes(supabaseUser.email?.toLowerCase())
           const finalRole = isHardcodedAdmin ? 'admin' : data.role
 
           const userWithAdmin = {
