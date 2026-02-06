@@ -62,7 +62,7 @@ export default function FeaturedProducts() {
             {products.map((product) => (
               <div
                 key={product.id}
-                className="card group cursor-pointer hover:shadow-lg transition-shadow"
+                className="card group cursor-pointer"
                 onClick={() => router.push(`/products/${product.slug}`)}
               >
                 <div className="aspect-square bg-cream-100 rounded-lg mb-4 flex items-center justify-center text-6xl">
