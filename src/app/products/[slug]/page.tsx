@@ -304,16 +304,15 @@ export default function ProductDetailPage() {
 
             {/* Thumbnail Gallery */}
             {currentImages.length > 1 && (
-              <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+              <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {currentImages.map((imageUrl, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                      selectedImageIndex === index
+                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${selectedImageIndex === index
                         ? 'border-cream-300 shadow-md scale-105'
                         : 'border-cream-200 hover:border-cream-300 active:scale-95'
-                    }`}
+                      }`}
                   >
                     <img
                       src={imageUrl}
@@ -361,6 +360,8 @@ export default function ProductDetailPage() {
                 colors={product.colors}
                 basePrice={product.price}
                 onColorChange={handleColorChange}
+                variantLabel={product.name.toLowerCase().includes('set of 3') ? 'Get Random 3' : 'Color'}
+                useImageSwatches={product.name.toLowerCase().includes('set of 3')}
               />
             )}
 
@@ -395,7 +396,7 @@ export default function ProductDetailPage() {
             {/* Stock Status */}
             <div>
               {product.stock_quantity > 0 ? (
-                <p className="text-green-600 text-sm font-medium">✓ In Stock ({product.stock_quantity} available)</p>
+                <p className="text-green-600 text-sm font-medium">✓ In Stock</p>
               ) : (
                 <p className="text-red-600 text-sm font-medium">✗ Out of Stock</p>
               )}
@@ -404,7 +405,7 @@ export default function ProductDetailPage() {
             {/* Add to Cart */}
             <button
               onClick={() => addToCart({
-                ...product, 
+                ...product,
                 price: currentPrice,
                 image_url: currentImages[selectedImageIndex] // Use the currently displayed image
               })}
@@ -414,8 +415,8 @@ export default function ProductDetailPage() {
               {product.stock_quantity === 0
                 ? 'Out of Stock'
                 : isInCart(product.id)
-                ? `In Cart (${getCartItemQuantity(product.id)}) - Add More`
-                : 'Add to Cart'
+                  ? `In Cart (${getCartItemQuantity(product.id)}) - Add More`
+                  : 'Add to Cart'
               }
             </button>
 
