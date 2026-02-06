@@ -152,16 +152,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!error && data) {
           // Update with real profile data, converting to our User interface
+          // Check if user is in hardcoded admin list
+          const isHardcodedAdmin = (data.email || supabaseUser.email) === 'bhanuvashisht99@gmail.com'
+          const finalRole = isHardcodedAdmin ? 'admin' : data.role
+
           const userWithAdmin = {
             id: data.id,
             email: data.email || supabaseUser.email,
             name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : data.first_name || data.email || 'User',
             phone: data.phone,
-            role: data.role,
+            role: finalRole,
             avatar_url: undefined, // profiles table doesn't have avatar_url
             created_at: data.created_at,
             updated_at: data.updated_at,
-            is_admin: data.role === 'admin'
+            is_admin: finalRole === 'admin'
           }
           console.log('✅ User profile loaded:', userWithAdmin.email, 'Role:', userWithAdmin.role)
           setUser(userWithAdmin)
