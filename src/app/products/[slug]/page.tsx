@@ -36,6 +36,8 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [currentImages, setCurrentImages] = useState<string[]>([])
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null)
+  const [selectedScent, setSelectedScent] = useState<string | null>(null)
+  const [scentOptions, setScentOptions] = useState<string[]>([])
   const [currentPrice, setCurrentPrice] = useState(0)
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
@@ -108,6 +110,20 @@ export default function ProductDetailPage() {
       if (!colors || colors.length === 0) {
         console.log('ℹ️ No colors found, using product images only')
         setSelectedImageIndex(0)
+      }
+
+      // Parse scent options if available
+      if ((productData as any).scent_description) {
+        // defined as comma separated list
+        const desc = (productData as any).scent_description
+        if (desc.includes(',')) {
+          const opts = desc.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0 && !s.toLowerCase().includes('and more'))
+          setScentOptions(opts)
+          if (opts.length > 0) setSelectedScent(opts[0])
+        } else {
+          setScentOptions([desc])
+          setSelectedScent(desc)
+        }
       }
 
     } catch (error) {
@@ -339,11 +355,27 @@ export default function ProductDetailPage() {
                 </p>
               )}
 
-              {/* Prominent Scent Display */}
-              {product.scent_description && (
-                <div className="mt-3 flex items-center text-base">
-                  <span className="text-charcoal/60 font-serif italic mr-2">Scent:</span>
-                  <span className="text-charcoal/70 font-medium">{product.scent_description}</span>
+              {/* Scent Selector */}
+              {scentOptions.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium text-charcoal/80 mb-3">Scent: <span className="text-charcoal font-semibold">{selectedScent}</span></h3>
+                  <div className="flex flex-wrap gap-2">
+                    {scentOptions.map((scent) => (
+                      <button
+                        key={scent}
+                        onClick={() => setSelectedScent(scent)}
+                        className={`
+                          px-4 py-2 rounded-full text-sm border transition-all duration-200
+                          ${selectedScent === scent
+                            ? 'bg-charcoal text-white border-charcoal shadow-md'
+                            : 'bg-white text-charcoal border-gray-200 hover:border-gray-400'
+                          }
+                        `}
+                      >
+                        {scent}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -417,11 +449,23 @@ export default function ProductDetailPage() {
 
             {/* Add to Cart */}
             <button
-              onClick={() => addToCart({
-                ...product,
-                price: currentPrice,
-                image_url: currentImages[selectedImageIndex] // Use the currently displayed image
-              })}
+              onClick={() => {
+                // Create a unique ID for the variant to ensure separate cart items
+                const variantId = `${product.id}${selectedColor ? `-${selectedColor.id}` : ''}${selectedScent ? `-${selectedScent.replace(/\s+/g, '-').toLowerCase()}` : ''}`
+
+                // Create a descriptive name
+                let variantName = product.name
+                if (selectedColor) variantName += ` - ${selectedColor.color_name}`
+                if (selectedScent) variantName += ` / ${selectedScent}`
+
+                addToCart({
+                  ...product,
+                  id: variantId, // Override ID for cart uniqueness
+                  name: variantName, // Override Name for UI clarity
+                  price: currentPrice,
+                  image_url: currentImages[selectedImageIndex]
+                })
+              }}
               className="w-full btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:translate-y-0"
               disabled={product.stock_quantity === 0}
             >
