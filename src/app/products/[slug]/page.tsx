@@ -232,8 +232,8 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-50 pt-20 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-cream-50 pt-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Breadcrumb */}
         <div className="flex items-center space-x-2 text-sm text-charcoal/60 mb-8">
           <button type="button" onClick={() => router.push('/')} className="hover:text-charcoal">Home</button>
@@ -310,8 +310,8 @@ export default function ProductDetailPage() {
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
                     className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${selectedImageIndex === index
-                      ? 'border-cream-300 shadow-md scale-105'
-                      : 'border-cream-200 hover:border-cream-300 active:scale-95'
+                        ? 'border-cream-300 shadow-md scale-105'
+                        : 'border-cream-200 hover:border-cream-300 active:scale-95'
                       }`}
                   >
                     <img
@@ -409,7 +409,7 @@ export default function ProductDetailPage() {
                 price: currentPrice,
                 image_url: currentImages[selectedImageIndex] // Use the currently displayed image
               })}
-              className="btn-primary w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-xl"
+              className="w-full bg-cream-300 hover:bg-cream-300/90 text-white py-4 px-6 rounded-lg font-semibold text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={product.stock_quantity === 0}
             >
               {product.stock_quantity === 0

@@ -15,19 +15,19 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-cream-300 text-white px-8 py-4 rounded-full font-medium tracking-wide hover:bg-cream-300/90 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ease-out;
+    @apply bg-cream-300 text-white px-6 py-3 rounded-lg font-medium hover:bg-cream-300/90 transition-colors;
   }
 
   .btn-secondary {
-    @apply bg-cream-100 text-charcoal px-8 py-4 rounded-full font-medium tracking-wide hover:bg-cream-200 hover:-translate-y-0.5 transition-all duration-300;
+    @apply bg-cream-100 text-charcoal px-6 py-3 rounded-lg font-medium hover:bg-cream-200 transition-colors;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-sm border-0 hover:shadow-xl transition-all duration-500 p-6;
+    @apply bg-white rounded-lg shadow-sm border border-cream-100 p-6;
   }
 
   .input {
-    @apply w-full px-4 py-3 bg-cream-50 border-b-2 border-cream-200 rounded-t-lg focus:outline-none focus:border-cream-300 transition-colors;
+    @apply w-full px-4 py-3 border border-cream-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 focus:border-transparent;
   }
 
   .scrollbar-hide {
