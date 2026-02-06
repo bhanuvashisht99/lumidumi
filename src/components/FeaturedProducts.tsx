@@ -104,7 +104,15 @@ export default function FeaturedProducts() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        addToCart(product)
+                        // Recalculate the image to ensure we pass the one being displayed
+                        const images = (product as any).images || []
+                        const primaryImage = images.find((img: any) => img.is_primary) || images[0]
+                        const imageUrl = primaryImage?.url || product.image_url
+
+                        addToCart({
+                          ...product,
+                          image_url: imageUrl
+                        })
                       }}
                       className="text-sm bg-cream-100 hover:bg-cream-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       disabled={product.stock_quantity === 0}
@@ -112,8 +120,8 @@ export default function FeaturedProducts() {
                       {product.stock_quantity === 0
                         ? 'Out of Stock'
                         : isInCart(product.id)
-                        ? `In Cart (${getCartItemQuantity(product.id)})`
-                        : 'Add to Cart'
+                          ? `In Cart (${getCartItemQuantity(product.id)})`
+                          : 'Add to Cart'
                       }
                     </button>
                   </div>
