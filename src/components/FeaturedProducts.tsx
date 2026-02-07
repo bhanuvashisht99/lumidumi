@@ -2,11 +2,9 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useCart } from '@/contexts/CartContext'
 import { usePreloadedData } from '@/contexts/DataPreloadContext'
 
 export default function FeaturedProducts() {
-  const { addToCart, isInCart, getCartItemQuantity } = useCart()
   const router = useRouter()
   const { publicProducts, isLoading: loading, refreshData } = usePreloadedData()
 
@@ -90,29 +88,6 @@ export default function FeaturedProducts() {
                   <span className="text-lg font-medium text-charcoal/80">
                     ₹{product.price}
                   </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      // Recalculate the image to ensure we pass the one being displayed
-                      const images = (product as any).images || []
-                      const primaryImage = images.find((img: any) => img.is_primary) || images[0]
-                      const imageUrl = primaryImage?.url || product.image_url
-
-                      addToCart({
-                        ...product,
-                        image_url: imageUrl
-                      })
-                    }}
-                    className="text-sm bg-cream-100 hover:bg-cream-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                    disabled={product.stock_quantity === 0}
-                  >
-                    {product.stock_quantity === 0
-                      ? 'Out of Stock'
-                      : isInCart(product.id)
-                        ? `In Cart (${getCartItemQuantity(product.id)})`
-                        : 'Add to Cart'
-                    }
-                  </button>
                 </div>
               </div>
             ))}

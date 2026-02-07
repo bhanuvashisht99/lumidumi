@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Product } from '@/lib/database'
-import { useCart } from '@/contexts/CartContext'
 import { usePreloadedData } from '@/contexts/DataPreloadContext'
+
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,7 @@ function ProductCard({ product, images, hasColors, onClick }: {
   onClick: (e?: any) => void
 }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const { addToCart, isInCart, getCartItemQuantity } = useCart()
+
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -140,38 +140,22 @@ function ProductCard({ product, images, hasColors, onClick }: {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-2xl font-bold text-cream-300">
-            ₹{product.price.toLocaleString()}
-          </span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              addToCart(product)
-            }}
-            className="bg-cream-300 hover:bg-cream-300/90 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={product.stock_quantity === 0}
-          >
-            {product.stock_quantity === 0
-              ? 'Out of Stock'
-              : isInCart(product.id)
-                ? `In Cart (${getCartItemQuantity(product.id)})`
-                : 'Add to Cart'
-            }
-          </button>
-        </div>
-        {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-          <p className="text-orange-600 text-xs font-medium">Only {product.stock_quantity} left in stock!</p>
-        )}
+        <span className="text-2xl font-bold text-cream-300">
+          ₹{product.price.toLocaleString()}
+        </span>
       </div>
+      {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+        <p className="text-orange-600 text-xs font-medium">Only {product.stock_quantity} left in stock!</p>
+      )}
     </div>
+
   )
 }
 
 export default function ProductsPage() {
   const router = useRouter()
+
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const { addToCart, isInCart, getCartItemQuantity } = useCart()
 
   // Use preloaded data instead of separate loading
   const { data, isLoading, refreshData, error, publicProducts } = usePreloadedData()
@@ -233,8 +217,8 @@ export default function ProductsPage() {
               type="button"
               onClick={() => setSelectedCategory(category.id)}
               className={`px-6 py-3 rounded-full font-medium transition-colors ${selectedCategory === category.id
-                  ? 'bg-cream-300 text-white'
-                  : 'bg-white text-charcoal hover:bg-cream-100'
+                ? 'bg-cream-300 text-white'
+                : 'bg-white text-charcoal hover:bg-cream-100'
                 }`}
             >
               {category.name}
