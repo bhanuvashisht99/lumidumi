@@ -134,9 +134,47 @@ export default function CheckoutPage() {
     return `₹${price.toLocaleString()}`
   }
 
+  const [deliveryCharges, setDeliveryCharges] = useState(0)
+
   const subtotal = getTotalPrice()
-  const deliveryCharges = 0 // Disabled for testing
   const total = subtotal + deliveryCharges
+
+  useEffect(() => {
+    // Calculate delivery charges based on location
+    const calculateDelivery = () => {
+      const state = formData.state?.toLowerCase().trim() || ''
+      const city = formData.city?.toLowerCase().trim() || ''
+
+      // Specific NCR Cities (excluding Delhi which is handled by state)
+      const ncrCities = ['gurgaon', 'gurugram', 'ghaziabad', 'faridabad', 'bahadurgarh']
+
+      // Special check for Noida to exclude Greater Noida
+      // User requested "only noida not greater noida"
+      const isNoida = city.includes('noida') && !city.includes('greater noida')
+
+      // Check if location is Delhi or NCR
+      // 1. State is Delhi
+      // 2. City includes one of the specific NCR cities
+      // 3. City is Noida (but not Greater Noida)
+      // 4. City itself is Delhi/New Delhi (in case user selected different state by mistake)
+      const isDelhiNCR =
+        state === 'delhi' ||
+        state === 'new delhi' ||
+        city === 'delhi' ||
+        city === 'new delhi' ||
+        ncrCities.some(ncrCity => city.includes(ncrCity)) ||
+        isNoida
+
+      // Set charges: 99 for Delhi/NCR, 199 for others
+      if (state || city) {
+        setDeliveryCharges(isDelhiNCR ? 99 : 199)
+      } else {
+        setDeliveryCharges(0) // Default/Initial state
+      }
+    }
+
+    calculateDelivery()
+  }, [formData.state, formData.city])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
@@ -441,12 +479,12 @@ export default function CheckoutPage() {
           }
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             console.log('🚪 Razorpay modal dismissed by user')
             setLoading(false)
             setPaymentInProgress(false) // Reset payment flag
           },
-          on_payment_failed: function(response: any) {
+          on_payment_failed: function (response: any) {
             console.error('❌ Razorpay payment failed:', response)
             console.error('❌ Failed payment details:', {
               code: response.error?.code,
@@ -522,9 +560,8 @@ export default function CheckoutPage() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                      errors.firstName ? 'border-red-300' : 'border-cream-200'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.firstName ? 'border-red-300' : 'border-cream-200'
+                      }`}
                   />
                   {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                 </div>
@@ -537,9 +574,8 @@ export default function CheckoutPage() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                      errors.lastName ? 'border-red-300' : 'border-cream-200'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.lastName ? 'border-red-300' : 'border-cream-200'
+                      }`}
                   />
                   {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                 </div>
@@ -554,9 +590,8 @@ export default function CheckoutPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                    errors.email ? 'border-red-300' : 'border-cream-200'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.email ? 'border-red-300' : 'border-cream-200'
+                    }`}
                 />
                 {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
               </div>
@@ -571,9 +606,8 @@ export default function CheckoutPage() {
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="10-digit mobile number"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                    errors.phone ? 'border-red-300' : 'border-cream-200'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.phone ? 'border-red-300' : 'border-cream-200'
+                    }`}
                 />
                 {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
               </div>
@@ -588,9 +622,8 @@ export default function CheckoutPage() {
                   value={formData.address}
                   onChange={handleInputChange}
                   placeholder="House number, street name, area"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                    errors.address ? 'border-red-300' : 'border-cream-200'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.address ? 'border-red-300' : 'border-cream-200'
+                    }`}
                 />
                 {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
               </div>
@@ -605,9 +638,8 @@ export default function CheckoutPage() {
                     name="city"
                     value={formData.city}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                      errors.city ? 'border-red-300' : 'border-cream-200'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.city ? 'border-red-300' : 'border-cream-200'
+                      }`}
                   />
                   {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
@@ -619,12 +651,13 @@ export default function CheckoutPage() {
                     name="state"
                     value={formData.state}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                      errors.state ? 'border-red-300' : 'border-cream-200'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.state ? 'border-red-300' : 'border-cream-200'
+                      }`}
                   >
                     <option value="">Select State</option>
                     <option value="Delhi">Delhi</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
                     <option value="Maharashtra">Maharashtra</option>
                     <option value="Karnataka">Karnataka</option>
                     <option value="Tamil Nadu">Tamil Nadu</option>
@@ -645,9 +678,8 @@ export default function CheckoutPage() {
                     value={formData.pincode}
                     onChange={handleInputChange}
                     placeholder="6-digit code"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${
-                      errors.pincode ? 'border-red-300' : 'border-cream-200'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cream-300 ${errors.pincode ? 'border-red-300' : 'border-cream-200'
+                      }`}
                   />
                   {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
                 </div>
